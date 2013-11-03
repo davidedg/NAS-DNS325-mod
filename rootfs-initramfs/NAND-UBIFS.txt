@@ -1,0 +1,99 @@
+http://www.linux-mtd.infradead.org/faq/ubifs.html
+http://free-electrons.com/blog/creating-flashing-ubi-ubifs-images/
+
+
+mkfs.ubifs -v -r ${RFSnand} -m 2048 -e 129024 -c 1016 -x zlib -o ${RFSnandPATH}/ubifs.img
+mkfs.ubifs
+        root:         /root/nas/rootfs/rfsnand/
+        min_io_size:  2048
+        leb_size:     129024
+        max_leb_cnt:  1016
+        output:       /root/nas/rootfs/ubifs.img
+        jrn_size:     8388608
+        reserved:     0
+        compr:        zlib
+        keyhash:      r5
+        fanout:       8
+        orph_lebs:    1
+        space_fixup:  0
+        super lebs:   1
+        master lebs:  2
+        log_lebs:     5
+        lpt_lebs:     2
+        orph_lebs:    1
+        main_lebs:    378
+        gc lebs:      1
+        index lebs:   9
+        leb_cnt:      389
+        UUID:         24423A92-EC6E-4F99-956A-29847BBBC37C
+Success!
+
+
+U-Boot:
+setenv mtdparts 'mtdparts=orion_nand:896k(u-boot),128k(u-boot-env),-(rootmtd)'
+saveenv
+reset
+
+
+
+
+=> nand erase.part rootmtd
+
+NAND erase.part: device 0 offset 0x100000, size 0x7f00000
+Skipping bad block at  0x060c0000
+Erasing at 0x7fe0000 -- 100% complete.
+OK
+
+
+=> ubi part rootmtd
+UBI: attaching mtd1 to ubi0
+UBI: physical eraseblock size:   131072 bytes (128 KiB)
+UBI: logical eraseblock size:    129024 bytes
+UBI: smallest flash I/O unit:    2048
+UBI: sub-page size:              512
+UBI: VID header offset:          512 (aligned 512)
+UBI: data offset:                2048
+UBI: empty MTD device detected
+UBI: create volume table (copy #1)
+UBI: create volume table (copy #2)
+UBI: attached mtd1 to ubi0
+UBI: MTD device name:            "mtd=2"
+UBI: MTD device size:            127 MiB
+UBI: number of good PEBs:        1015
+UBI: number of bad PEBs:         1
+UBI: max. allowed volumes:       128
+UBI: wear-leveling threshold:    4096
+UBI: number of internal volumes: 1
+UBI: number of user volumes:     0
+UBI: available PEBs:             1001
+UBI: total number of reserved PEBs: 14
+UBI: number of PEBs reserved for bad PEB handling: 10
+UBI: max/mean erase counter: 1/0
+
+
+=> ubi create rootmtd
+No size specified -> Using max size (129153024)
+Creating dynamic volume rootmtd of size 129153024
+
+=> usb reset ; ext2load usb 0:1 0x1000000 /ubifs.img
+(Re)start USB...
+USB0:   USB EHCI 1.00
+scanning bus 0 for devices... 2 USB Device(s) found
+       scanning usb for storage devices... 1 Storage Device(s) found
+50190336 bytes read in 2238 ms (21.4 MiB/s)
+
+303C000
+=> ubi write 0x1000000 rootmtd 2FDD800
+50190336 bytes written to volume rootmtd
+
+
+
+=> ubifsmount ubi0:rootmtd
+UBIFS: mounted UBI device 0, volume 0, name "rootmtd"
+UBIFS: mounted read-only
+UBIFS: file system size:   127733760 bytes (124740 KiB, 121 MiB, 990 LEBs)
+UBIFS: journal size:       9033728 bytes (8822 KiB, 8 MiB, 71 LEBs)
+UBIFS: media format:       w4/r0 (latest is w4/r0)
+UBIFS: default compressor: zlib
+UBIFS: reserved for root:  0 bytes (0 KiB)
+
