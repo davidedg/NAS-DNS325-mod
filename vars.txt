@@ -1,0 +1,24 @@
+RFShddPATH=/root/nas/rootfs
+RFShddCFG=$RFShddPATH/multistrap-hdd.cfg
+RFShdd=$RFShddPATH/rfshdd
+
+RFSnandPATH=/root/nas/rootfs
+RFSnandCFG=$RFSnandPATH/multistrap-nand.cfg
+RFSnand=$RFSnandPATH/rfsnand
+NASMAC=C8:BE:19:03:46:4E
+NASIP=192.168.0.100
+NASGW=192.168.0.254
+NASHOSTNAME=nasivadaras.ivadaras.lan
+
+
+KERNELWORKDIR=/root/nas/kernel
+
+
+NASINITRAMFS=/root/nas/initramfs+root-ro
+NASINITRAMFSNAME="DNS325-Initramfs"
+
+#USB TEST:
+USBTESTDEV=/dev/sdc1
+USBTESTMNT=/mnt/usb_stick/
+
+
