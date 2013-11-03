@@ -1,0 +1,52 @@
+# Install Bluetooth and Sound packages:
+apt-get install bluetooth bluez-hcidump python-gobject-2 python-gobject bluez-tools bluez-alsa bluez-gstreamer rtkit
+apt-get install alsa-base alsa-tools alsa-utils alsaplayer-text
+apt-get install pulseaudio-module-bluetooth pulseaudio-utils rsyslog
+apt-get install mplayer
+
+
+# ENABLE AUDIO services for Bluetooth:
+
+/etc/bluetooth/audio.conf
+
+[General]
+
+Enable=Source,Sink,Media,Socket
+
+
+# Make PA not exit on idle:
+/etc/pulse/daemon.conf
+allow-exit = no
+exit-idle-time = -1
+
+REBOOT (reload d-bus, bluetooth)
+
+
+# Try PA as root in USER-MODE (SYSTEM MODE is just too difficult)
+/usr/bin/pulseaudio --start --log-target=syslog --system=false --disallow-exit=1 --exit-idle-time=-1
+
+
+
+# BLUETOOTH SCAN, PAIR AND CONNECT:
+# We will use the front-ends from the "bluez-tools" project, which simplify alot!
+# CONNECT BT:
+bt-adapter -l
+bt-adapter -d
+bt-device -c 00:1D:DF:BE:10:4C
+bt-device --set 00:1D:DF:BE:10:4C Trusted 1
+bt-audio -c 00:1D:DF:BE:10:4C
+
+
+# Test output
+speaker-test -t wav -c 2
+
+# Test audio MP3
+# mplayer file.mp3
+
+
+
+#######################################################################################################################
+## Credits: 
+## http://code.google.com/p/bluez-tools/
+## http://rootprompt.apatsch.net/2013/04/23/raspberry-pi-network-audio-player-pulseaudio-dlna-and-bluetooth-a2dp-part-3-bluetooth/
+#######################################################################################################################
