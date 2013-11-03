@@ -17,5 +17,5 @@ EOF
 
 # Open new terminal and check:
 env|grep PATH
-PATH=/root/nas/arm-2013.05/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+PATH=/usr/local/arm-2013.05/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 
