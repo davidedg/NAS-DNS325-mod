@@ -1,0 +1,95 @@
+setenv archNumber '3800'
+setenv baudrate '115200'
+setenv mainlineLinux 'yes'
+setenv stderr 'serial'
+setenv stdin 'serial'
+setenv stdout 'serial'
+setenv bootdelay '3'
+setenv mtdparts 'mtdparts=orion_nand:896k(u-boot),128k(u-boot-env),-(rootmtd)'
+setenv autoload 'no'
+setenv sata_dma_mode 'yes'
+setenv CASset 'min'
+setenv MALLOC_len '1'
+setenv loads_echo '0'
+setenv disaMvPnp 'no'
+setenv disL2Cache 'no'
+setenv disL2Prefetch 'yes'
+setenv setL2CacheWT 'yes'
+setenv enaAutoRecovery 'yes'
+setenv enaCpuStream 'no'
+setenv enaDCPref 'yes'
+setenv enaICPref 'yes'
+setenv enaMonExt 'no'
+setenv enaWrAllo 'no'
+setenv nandEcc '1bit'
+setenv netbsd_en 'no'
+setenv usb0Mode 'host'
+setenv vxworks_en 'no'
+setenv pexMode 'RC'
+setenv ethact 'egiga0'
+
+# substitute with your MAC address on the sticker located on bottom of the NAS
+setenv ethaddr 'C8:BE:19:03:46:4E'
+
+setenv ethmtu '1500'
+setenv ethprime 'egiga0'
+
+# substitute with the NAS IP ADDRESS/MASK
+setenv ipaddr '192.168.0.100'
+setenv netmask '255.255.255.0'
+
+# substitute with an IP ADDRESS in your NETWORK for use with NETCONSOLE
+setenv serverip '192.168.0.250'
+
+setenv netretry 'no'
+setenv console 'ttyS0,115200'
+setenv bootargs_end ':::DB88FXX81:eth0:none'
+
+setenv bootopts ''
+setenv uImageAddr '0x1000000'
+setenv uInitramfsAddr '0xA00000'
+setenv uDTBAddr '0x0900000'
+
+setenv usb_root 'LABEL=rootusb'
+setenv usb_opts 'usb-storage.delay_use=0 rootdelay=10'
+setenv usb_load_DTB 'ext2load usb 0:1 ${uDTBAddr} /boot/kirkwood-dns325.dtb'
+setenv usb_load_uImage 'ext2load usb 0:1 ${uImageAddr} /boot/uImage'
+setenv usb_load_uInitramfs 'ext2load usb 0:1 ${uInitramfsAddr} /boot/uInitramfs'
+setenv usb_setbootargs 'setenv bootargs console=${console} root=${usb_root} ${usb_opts} ${mtdparts} ${bootargs_end} ${bootopts}'
+setenv boot_from_usb 'usb reset; if run usb_load_DTB; then if run usb_load_uImage && run usb_load_uInitramfs; then run usb_setbootargs; bootm ${uImageAddr} ${uInitramfsAddr} ${uDTBAddr}; fi; fi'
+
+setenv hdd_root 'LABEL=roothdd'
+setenv hdd_opts ''
+setenv hdd_load_DTB 'ext2load ide 0:1 ${uDTBAddr} /kirkwood-dns325.dtb'
+setenv hdd_load_uImage 'ext2load ide 0:1 ${uImageAddr} /uImage'
+setenv hdd_load_uInitramfs 'ext2load ide 0:1 ${uInitramfsAddr} /uInitramfs'
+setenv hdd_setbootargs 'setenv bootargs console=${console} root=${hdd_root} ${hdd_opts} ${mtdparts} ${bootargs_end} ${bootopts}'
+setenv boot_from_hdd 'ide reset; if run hdd_load_DTB; then if run hdd_load_uImage && run hdd_load_uInitramfs; then run hdd_setbootargs; bootm ${uImageAddr} ${uInitramfsAddr} ${uDTBAddr}; fi; fi'
+
+setenv ubi_part 'rootmtd'
+setenv ubi_fs 'rootmtd'
+setenv ubi_opts 'ubi.mtd=2 rootfstype=ubifs'
+setenv ubi_load_DTB 'ubifsload ${uDTBAddr} /boot/kirkwood-dns325.dtb'
+setenv ubi_load_uImage 'ubifsload ${uImageAddr} /boot/uImage'
+setenv ubi_load_uInitramfs 'ubifsload ${uInitramfsAddr} /boot/uInitramfs'
+setenv ubi_setbootargs 'setenv bootargs console=${console} root=${ubi_fs} ${ubi_opts} ${mtdparts} ${bootargs_end} ${bootopts}'
+setenv boot_from_nand 'ubi part ${ubi_part}; ubifsmount ubi0:${ubi_fs}; if run ubi_load_DTB; then if run ubi_load_uImage && run ubi_load_uInitramfs; then run ubi_setbootargs; bootm ${uImageAddr} ${uInitramfsAddr} ${uDTBAddr}; fi; fi'
+
+setenv if_netconsole 'ping $serverip'
+setenv start_netconsole 'setenv ncip $serverip; setenv bootdelay 10; setenv stdin nc; setenv stdout nc; setenv stderr nc; version;'
+
+setenv bootcmd 'run boot_from_usb; run boot_from_hdd; run boot_from_nand; run if_netconsole start_netconsole'
+
+
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+PLEASE PAY REALLY ATTENTION IF YOU USE PREBOOT COMMAND,
+ YOU RISK TO BRICK THE DEVICE, even if you have serial console
+ access, you will need JTAG access to unbrick
+
+# (If you don't understand the risks, JUST DON'T USE IT) # setenv preboot 'run if_netconsole start_netconsole'
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+

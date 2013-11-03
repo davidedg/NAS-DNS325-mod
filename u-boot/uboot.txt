@@ -1,0 +1,205 @@
+
+##################################################
+# DOWNLOAD U-BOOT
+##################################################
+
+DOWNLOAD U-Boot:
+ftp://ftp.denx.de/pub/u-boot/
+
+wget ftp://ftp.denx.de/pub/u-boot/u-boot-2013.07.tar.bz2
+tar xjf u-boot-2013.07.tar.bz2
+cd u-boot-2013.07
+
+##################################################
+# (optional) ENABLE PREBOOT COMMAND (for netconsole)
+##################################################
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+PLEASE PAY REALLY ATTENTION IF YOU USE PREBOOT COMMAND,
+ YOU RISK TO BRICK THE DEVICE, even if you have serial console
+ access, you will need JTAG access to unbrick
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+You will have to manually insert this line in include/configs/dns325.h
+
+"#define CONFIG_PREBOOT"
+
+
+##################################################
+# BUILD U-BOOT
+##################################################
+
+
+make distclean
+make dns325_config
+make u-boot.kwb
+
+	Preparing kirkwood boot image to boot from nand
+	Nand ECC mode = default
+	Nand page size = 0x800
+	Image Type:   Kirkwood Boot from NAND Flash Image
+	
+	Data Size:    421468 Bytes = 411.59 kB = 0.40 MB
+	Load Address: 00600000
+	Entry Point:  00600000
+
+
+##################################################
+# INSTALLING NEW U-BOOT
+##################################################
+
+Format a usb stick as ext2fs and copy u-boot.kwb on it.
+
+
+Via serial console, interrupt u-boot sequence.
+To interrupt U-Boot it depends on the version:
+ - DLINK stock u-boot: you have to press "1" and then SPACE.
+ - Custom U-Boot: just press any key.
+
+
+
+Once you reach U-Boot console, load the new U-Boot image into 
+ram and then write it from ram to MTD-0:
+
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+    THIS IS THE MOST DANGEROUS PART
+	STRONGLY CONSIDER USING AN UPS FOR THE FLASH OPERATION.
+	IF BAD THINGS HAPPEN HERE, LAST CHANCE OF REVOERY IS KWARTBOOT
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+
+These are the commands: 
+
+usb reset
+ext2load usb 0:1 0x1000000 /u-boot.kwb
+nand erase 0x000000 0xe0000
+nand write 0x1000000 0x000000 0xe0000
+reset
+
+
+###############################################################
+
+
+This is how the whole operation should appear:
+
+
+\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+ ** MARVELL BOARD: DB-88F6281A-BP LE
+
+U-Boot 1.1.4 (May 16 2011 - 10:40:38) Marvell version: 3.4.14.DNS-325.03
+
+U-Boot code: 00600000 -> 0067FFF0  BSS: -> 006CEE80
+
+Soc: MV88F6281 Rev 3 (DDR2)
+CPU running @ 1200Mhz L2 running @ 400Mhz
+SysClock = 400Mhz , TClock = 200Mhz
+
+DRAM CAS Latency = 5 tRP = 5 tRAS = 18 tRCD=6
+DRAM CS[0] base 0x00000000   size 256MB
+DRAM Total size 256MB  16bit width
+Flash:  0 kB
+Addresses 8M - 0M are saved for the U-Boot usage.
+Mem malloc Initialization (8M - 7M): Done
+NAND:128 MB
+
+CPU : Marvell Feroceon (Rev 1)
+
+Streaming disabled
+Write allocate disabled
+
+
+USB 0: host mode
+PEX 0: interface detected no Link.
+Net:   egiga0 [PRIME]
+Hit any key to stop autoboot:  0
+
+
+Marvell>> usb reset
+
+(Re)start USB...
+USB0:   USB EHCI 1.00
+scanning bus 0 for devices... 2 USB Device(s) found
+       scanning usb for storage devices... 1 Storage Device(s) found
+
+Marvell>> ext2load usb 0:1 0x1000000 /u-boot.kwb
+
+414756 bytes read in 230 ms (1.7 MiB/s)
+Marvell>> nand erase 0x000000 0xe0000
+NAND erase: device 0 offset 0x0, size 0xe0000
+Erasing at 0xc0000 -- 100% complete.
+OK
+
+Marvell>> nand write 0x1000000 0x000000 0xe0000
+
+NAND write: device 0 offset 0x0, size 0xe0000
+ 917504 bytes written: OK
+
+Marvell>> reset
+
+resetting ...
+
+U-Boot 2013.07 (Jul 25 2013 - 23:41:23)
+D-Link DNS-325
+
+SoC:   Kirkwood 88F6281_A1
+DRAM:  256 MiB
+WARNING: Caches not enabled
+NAND:  128 MiB
+In:    serial
+Out:   serial
+Err:   serial
+Net:   egiga0 [PRIME]
+
+Hit any key to stop autoboot:  0
+=> version
+
+U-Boot 2013.07 (Jul 25 2013 - 23:41:23)
+D-Link DNS-325
+arm-none-eabi-gcc (Sourcery CodeBench Lite 2013.05-23) 4.7.3
+GNU ld (Sourcery CodeBench Lite 2013.05-23) 2.23.52.20130219
+
+
+
+
+\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+
+##################################################
+# Configure new U-BOOT
+##################################################
+
+The U-Boot environment (configuration) resides on 128KB part of the MTD, from 0x0E0000 to 0x100000.
+To change it, we do it from within U-Boot itself, via the "setenv" command.
+
+You can use the already prepared commands in ENV_FINAL.txt file
+Of course, adapt the commands to your network environment.
+
+The new configuration will set some required parameters and the new boot sequence will be:
+
+- try to boot from USB stick:
+		load USB partition 1: kernel,dtb,uinitramfs and boot with root=LABEL=rootusb
+		so your usb 1st partition must be EXTFS labelled with "rootusb" (use e2label)
+- try to boot from HDD 0
+		load IDE partition 1: kernel,dtb,uinitramfs and boot with root=LABEL=roothdd
+		so your hdd 1st partition must be EXTFS labelled with "roothdd" (use e2label)
+- try to boot from MTD (UBI)
+		load NAND UBI volume named "rootmtd": kernel,dtb,uinitramfs and boot with root=LABEL=rootmtd
+		so both your UBI partition and volume must be named "rootmtd" (set during UBI creation)
+
+- If all else fails, load netconsole ( see http://forum.doozan.com/read.php?3,14,14 )
+
+
+
+
+
+#######################################################################################################################
+## Credits: 
+## http://jamie.lentin.co.uk/devices/dlink-dns325/replacing-firmware/
+## http://www.openstora.com/wiki/index.php?title=How_to_install_your_custom_firmware
+## http://forum.doozan.com/read.php?3,14,14
+#######################################################################################################################
