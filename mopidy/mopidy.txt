@@ -1,0 +1,128 @@
+
+
+wget -q -O - http://apt.mopidy.com/mopidy.gpg | sudo apt-key add -
+
+
+cat <<EOF >/etc/apt/sources.list.d/mopidy.list
+# Mopidy APT archive
+deb http://apt.mopidy.com/ stable main contrib non-free
+deb-src http://apt.mopidy.com/ stable main contrib non-free
+EOF
+
+apt-get update
+apt-get --install-recommends install mopidy mopidy-spotify
+
+
+# TEST GSTREAMER AUDIO output
+gst-inspect-0.10
+gst-launch-0.10 audiotestsrc ! audioresample ! autoaudiosink
+
+
+
+# Create dedicated user
+useradd  --system --create-home --no-log-init mopidy
+mv /home/mopidy /mnt/data-d1/
+ln -s /mnt/data-d1/mopidy /home/
+
+
+# Not sure if really needed...
+adduser mopidy lp
+adduser mopidy audio
+adduser mopidy plugdev
+
+
+# Create startup script
+vi /etc/init.d/mopidy
+######################################################################
+#!/bin/bash
+# mopidy daemon
+# chkconfig: 345 20 99
+# description: mopidy daemon
+# processname: mopidy
+### BEGIN INIT INFO
+# Provides:          mopidy deamon
+# Required-Start:    $remote_fs $syslog $network
+# Required-Stop:     $remote_fs $syslog $network
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: Start mopidy daemon at boot time
+# Description:       Enable mopidy music server
+### END INIT INFO
+DAEMON_PATH="/usr/bin/"
+ 
+DAEMON=mopidy
+CHUSER=mopidy
+DAEMONOPTS=""
+ 
+NAME=mopidy
+DESC="My mopidy init script"
+PIDFILE=/var/run/$NAME.pid
+SCRIPTNAME=/etc/init.d/$NAME
+ 
+case "$1" in
+start)
+        echo "Starting Mopidy Daemon"
+        start-stop-daemon --start --chuid $CHUSER --background --exec /usr/bin/mopidy \
+                --pidfile $PIDFILE --make-pidfile \
+                -- 2>/var/log/mopidy.log
+;;
+stop)
+        echo "Stopping Mopidy Daemon"
+        killall -u mopidy
+		sleep 10
+		killall -s 9 -u mopidy
+;;
+ 
+restart)
+        $0 stop
+        $0 start
+;;
+ 
+*)
+        echo "Usage: $0 {start|stop|restart}"
+        exit 1
+esac
+##############################################################################
+
+
+chmod +x /etc/init.d/mopidy
+
+
+# Run it once to create home structure
+service mopidy start
+
+# protect your credentials...
+chmod 0640 /home/mopidy/.config/mopidy/mopidy.conf
+
+# Then complete configuration:
+vi  /home/mopidy/.config/mopidy/mopidy.conf
+#################################################################
+[http]
+enabled = false
+
+[mpd]
+enabled=true
+hostname = 0.0.0.0
+
+[local]
+enabled = true
+media_dir = /mnt/data-d1/share/MEDIA/MUSICA
+
+[spotify]
+enabled = true
+username = username
+password = ********
+bitrate = 320
+timeout = 10
+#################################################################
+
+# RESCAN LOCAL LIBRARY:
+su - mopidy -c 'mopidy-scan'
+
+
+# Make it run at startup
+insserv mopidy
+update-rc.d mopidy enable
+
+
+
