@@ -1,0 +1,378 @@
+
+***************************************************
+USE THE "vars.txt" commands to prepare the environment variables we will use.
+USE THE "crosscompile.txt" instructions to prepare the build toolchain
+***************************************************
+
+##################################################
+# Introduction
+##################################################
+
+The reason behind a custom kernel is to reduce memory footprint 
+(by not compiling not needed features) and to incluse some very nifty 
+feature like Bluetooth/WIFI/Sound Support/etc.
+
+
+One special feature will be "OverlayFS": this will allow to mount a volume
+in read-only while keeping the modified files "in-ram".
+I strongly wanted this feature to protect the NAND while doing my tests as the
+number of writes the NAND cells can support before dying is limited.
+
+In the end, I actually ended up using just the HDD and letting the NAND alone.
+So this feature actually is not so needed, but I learned a lot of the boot process
+while implementing it, so I share it anyway.
+
+
+
+
+##################################################
+# Download and prepare Kernel Sources (OverlayFS)
+##################################################
+
+OverlayFS is not yet supported in mainline kernel, but it is going to be accepted in the future.
+So we must use Torvald's kernel tree, together with the OverlayFS patches.
+If you prefer not to use OverlayFS at all, you can use kernel.org sources instead.
+
+
+mkdir -p ${KERNELWORKDIR}
+cd ${KERNELWORKDIR}
+
+Configure GIT environment
+git config --global user.name "Davide Del Grande"
+git config --global user.email "delgrande.davide@gmail.com"
+
+
+First we download Torvald's tree
+This will take time... it's approx. 1.5GB
+git clone git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git linux-overlayfs
+
+cd linux-overlayfs
+
+Enumerate latest available tags/branches:
+git for-each-ref refs/tags --sort=-taggerdate --format='%(refname)' --count=10
+	refs/tags/v3.12-rc7
+	refs/tags/v3.12-rc6
+	refs/tags/v3.12-rc5
+	refs/tags/v3.12-rc4
+	refs/tags/v3.12-rc3
+	refs/tags/v3.12-rc2
+	refs/tags/v3.12-rc1
+	refs/tags/v3.11
+	refs/tags/v3.11-rc7
+	refs/tags/v3.11-rc6
+
+
+
+Add a new git source for the OverlayFS code:
+
+
+git remote add overlayfs git://git.kernel.org/pub/scm/linux/kernel/git/mszeredi/vfs.git
+git fetch overlayfs
+	remote: Counting objects: 6261, done.
+	remote: Compressing objects: 100% (298/298), done.
+	remote: Total 2794 (delta 2509), reused 2753 (delta 2469)
+	Receiving objects: 100% (2794/2794), 470.12 KiB | 231 KiB/s, done.
+	Resolving deltas: 100% (2509/2509), completed with 630 local objects.
+	From git://git.kernel.org/pub/scm/linux/kernel/git/mszeredi/vfs
+	 * [new branch]      master     -> overlayfs/master
+	 * [new branch]      overlayfs.current -> overlayfs/overlayfs.current
+	 * [new branch]      overlayfs.v11 -> overlayfs/overlayfs.v11
+	 * [new branch]      overlayfs.v12 -> overlayfs/overlayfs.v12
+	 * [new branch]      overlayfs.v13 -> overlayfs/overlayfs.v13
+	 * [new branch]      overlayfs.v14 -> overlayfs/overlayfs.v14
+	 * [new branch]      overlayfs.v15 -> overlayfs/overlayfs.v15
+	 * [new branch]      overlayfs.v16 -> overlayfs/overlayfs.v16
+	 * [new branch]      overlayfs.v17 -> overlayfs/overlayfs.v17
+	 * [new branch]      overlayfs.v18 -> overlayfs/overlayfs.v18
+	 * [new branch]      overlayfs.v19 -> overlayfs/overlayfs.v19
+	 * [new branch]      overlayfs.v20 -> overlayfs/overlayfs.v20
+
+
+v18 is meant for kernel tree v3.10
+v19 is meant for kernel tree v3.11
+v20 should be for v3.12, not yet in stable tree
+
+I successfully used both v3.10/v18 and v3.11/v19
+
+
+Create a new Branch based on OVERLAYFS v18
+git checkout -b v3.10+overlayfs.v18 overlayfs/overlayfs.v18
+	Branch v3.10+overlayfs.v18 set up to track remote branch overlayfs.v18 from overlayfs.
+	Switched to a new branch 'v3.10+overlayfs.v18'
+
+
+Now apply the v3.10 Torvald's tree back to OverlayFS v18
+	
+git rebase v3.10
+	First, rewinding head to replay your work on top of it...
+	Applying: vfs: add i_op->dentry_open()
+	Applying: vfs: export do_splice_direct() to modules
+	Applying: vfs: export __inode_permission() to modules
+	Applying: vfs: introduce clone_private_mount()
+	Applying: overlay filesystem
+	Applying: overlayfs: add statfs support
+	Applying: overlayfs: implement show_options
+	Applying: overlay: overlay filesystem documentation
+	Applying: fs: limit filesystem stacking depth
+
+
+Commit our local git branch
+git add *
+git commit -m "Added OverlayFS support"
+
+
+
+
+##################################################
+# CONFIGURE KERNEL
+##################################################
+
+This will apply:
+	Kirkwood default config
+	Reduce Kernel Size not compiling unused stuff
+	Include some extra features.
+
+The 1st section is mandatory for the very minimal working of the NAS.
+Feel free to explore and add/remove features at your preference.
+
+
+
+While still in kernel tree directory
+
+
+MINIMAL CONFIG:
+cat arch/arm/configs/kirkwood_defconfig - <<EOF > .config
+### MIMINAL CONFIG FOR DLINK-DNS325
+#
+CONFIG_MACH_DLINK_KIRKWOOD_DT=y
+USE_OF=y
+CONFIG_SERIAL_OF_PLATFORM=y
+#
+CONFIG_I2C_GPIO=y
+CONFIG_I2C_MV64XXX=y
+#
+CONFIG_HWMON=y
+CONFIG_SENSORS_GPIO_FAN=y
+CONFIG_SENSORS_LM75=y
+#
+CONFIG_MTD_UBI=y
+CONFIG_UBIFS_FS=y
+#
+CONFIG_TMPFS=y
+CONFIG_BLK_DEV_INITRD=y
+# OVERLAYFS SUPPORT
+CONFIG_OVERLAYFS_FS=y
+CONFIG_TMPFS_XATTR=y
+#
+CONFIG_LOCALVERSION="+overlayfs"
+CONFIG_LOCALVERSION_AUTO=n
+#
+CONFIG_IKCONFIG=y
+CONFIG_IKCONFIG_PROC=y
+#
+CONFIG_NETCONSOLE=m
+CONFIG_NET_VENDOR_MARVELL=y
+EOF
+
+
+cat <<EOF >>.config
+# VPN Support, OK for OpenVPN server
+CONFIG_TUN=m
+CONFIG_L2TP=m
+EOF
+
+
+cat <<EOF >>.config
+# Disk Partitions
+CONFIG_PARTITION_ADVANCED=y
+CONFIG_MSDOS_PARTITION=y
+CONFIG_EFI_PARTITION=y
+CONFIG_LDM_PARTITION=y
+CONFIG_MAC_PARTITION=y
+# Filesystems support
+CONFIG_EXT2_FS=y
+CONFIG_EXT3_FS=y
+CONFIG_EXT4_FS=m
+CONFIG_XFS_FS=m
+CONFIG_FUSE_FS=m
+CONFIG_MSDOS_FS=m
+CONFIG_VFAT_FS=m
+CONFIG_NTFS_FS=m
+CONFIG_NTFS_RW=y
+CONFIG_JFFS2_FS=m
+CONFIG_HFS_FS=m
+CONFIG_HFSPLUS_FS=m
+EOF
+
+
+
+# Enable my DLINK DWL-G122 rev C1 USB Wifi dongle
+cat <<EOF >>.config
+# Enable my DLINK DWL-G122 rev C1 USB Wifi dongle
+CONFIG_RT2X00=y
+CONFIG_RT73USB=m
+EOF
+
+
+
+# BLUETOOTH + SOUND SUPPORT
+cat <<EOF >>.config
+# SOUND SUPPORT
+CONFIG_SND=m
+CONFIG_SND_SEQUENCER=m
+CONFIG_SND_SEQ_DUMMY=m
+CONFIG_SND_HRTIMER=m
+CONFIG_SND_SEQ_HRTIMER_DEFAULT=y
+CONFIG_SND_DYNAMIC_MINORS=y
+CONFIG_SND_MAX_CARDS=4
+CONFIG_SND_SUPPORT_OLD_API=y
+CONFIG_SND_DRIVERS=y
+# BLUETOOTH SUPPORT
+CONFIG_BT=m
+CONFIG_BT_RFCOMM=m
+CONFIG_BT_RFCOMM_TTY=y
+CONFIG_BT_BNEP=m
+CONFIG_BT_BNEP_MC_FILTER=y
+CONFIG_BT_BNEP_PROTO_FILTER=y
+CONFIG_BT_HIDP=m
+CONFIG_BT_HCIBTUSB=m
+CONFIG_BT_HCIBTSDIO=m
+CONFIG_BT_HCIUART=m
+CONFIG_BT_HCIUART_H4=y
+CONFIG_BT_HCIUART_BCSP=y
+CONFIG_BT_HCIUART_ATH3K=y
+CONFIG_BT_HCIUART_LL=y
+CONFIG_BT_HCIUART_3WIRE=y
+CONFIG_BT_HCIBCM203X=m
+CONFIG_BT_HCIBPA10X=m
+CONFIG_BT_HCIBFUSB=m
+CONFIG_BT_HCIVHCI=m
+CONFIG_BT_MRVL=m
+CONFIG_BT_MRVL_SDIO=m
+CONFIG_BT_ATH3K=m
+EOF
+
+
+
+# Further reduce Kernel size
+cat <<EOF >>.config
+# # Reduce kernel size not compiling unused stuff
+# General setup section
+CONFIG_PROFILING=n
+# Device Drivers 
+CONFIG_BLK_DEV_SR=n
+# Device Drivers / Network device support / Ethernet driver support
+# These are not wifi devices
+CONFIG_NET_VENDOR_3COM=n
+CONFIG_NET_VENDOR_ADAPTEC=n
+CONFIG_NET_VENDOR_ALTEON=n
+CONFIG_NET_VENDOR_AMD=n
+CONFIG_NET_VENDOR_ATHEROS=n
+CONFIG_NET_CADENCE=n
+CONFIG_NET_VENDOR_BROADCOM=n
+CONFIG_NET_VENDOR_BROCADE=n
+CONFIG_NET_VENDOR_CHELSIO=n
+CONFIG_NET_VENDOR_CIRRUS=n
+CONFIG_NET_VENDOR_CISCO=n
+CONFIG_NET_VENDOR_DEC=n
+CONFIG_NET_VENDOR_DLINK=n
+CONFIG_NET_VENDOR_EMULEX=n
+CONFIG_NET_VENDOR_EXAR=n
+CONFIG_NET_VENDOR_FARADAY=n
+CONFIG_NET_VENDOR_HP=n
+CONFIG_NET_VENDOR_INTEL=n
+CONFIG_NET_VENDOR_MELLANOX=n
+CONFIG_NET_VENDOR_MICREL=n
+CONFIG_NET_VENDOR_MICROCHIP=n
+CONFIG_NET_VENDOR_MYRI=n
+CONFIG_NET_VENDOR_NATSEMI=n
+CONFIG_NET_VENDOR_NVIDIA=n
+CONFIG_NET_VENDOR_OKI=n
+CONFIG_NET_VENDOR_QLOGIC=n
+CONFIG_NET_VENDOR_REALTEK=n
+CONFIG_NET_VENDOR_RDC=n
+CONFIG_NET_VENDOR_SEEQ=n
+CONFIG_NET_VENDOR_SILAN=n
+CONFIG_NET_VENDOR_SIS=n
+CONFIG_NET_VENDOR_SMSC=n
+CONFIG_NET_VENDOR_STMICRO=n
+CONFIG_NET_VENDOR_SUN=n
+CONFIG_NET_VENDOR_TEHUTI=n
+CONFIG_NET_VENDOR_TI=n
+CONFIG_NET_VENDOR_VIA=n
+CONFIG_NET_VENDOR_WIZNET=n
+# Kernel Hacking section
+CONFIG_DEBUG_KERNEL=n
+CONFIG_DEBUG_FS=n
+CONFIG_FTRACE=n
+CONFIG_UNUSED_SYMBOLS=n
+CONFIG_STRIP_ASM_SYMS=y
+# Security section
+CONFIG_SECURITY=n
+CONFIG_SECURITY_SELINUX=n
+CONFIG_SECURITY_TOMOYO=n
+CONFIG_SECURITY_APPARMOR=n
+EOF
+
+
+
+
+
+This will bring up the well-known ncurses-based configuration program.
+At this stage, you can exit and save and it will be ready.
+
+make menuconfig
+
+
+
+
+##################################################
+# COMPILE KERNEL
+##################################################
+
+
+Adjust -j (concurrent compilation jobs) for your host (I have 8 CPU threads)
+
+
+make -j8 uImage modules kirkwood-dns325.dtb
+
+.... lots of compiler/linker output....
+.... should end with:
+
+	Image Name:   Linux-3.10.0.overlayfs+
+	Created:      Sun Jul 28 15:48:21 2013
+	Image Type:   ARM Linux Kernel Image (uncompressed)
+	Data Size:    2928488 Bytes = 2859.85 kB = 2.79 MB
+	Load Address: 00008000
+	Entry Point:  00008000
+	  Image arch/arm/boot/uImage is ready
+
+
+##################################################
+# INSTALL KERNEL into ROOTFS tree (NAND / HDD):
+##################################################
+
+
+COPY uImage+DTB+modules to RootFS for NAND:
+
+cd ${KERNELWORKDIR}/linux-overlayfs
+cp arch/arm/boot/uImage $RFSnand/boot/uImage-v3.10-overlayfs
+ln -sf uImage-v3.10-overlayfs $RFSnand/boot/uImage
+cp arch/arm/boot/dts/kirkwood-dns325.dtb $RFSnand/boot/
+make INSTALL_MOD_PATH=$RFSnand modules_install
+
+
+COPY uImage+DTB+modules to RootFS for HDD:
+
+cd ${KERNELWORKDIR}/linux-overlayfs
+cp arch/arm/boot/uImage $RFShdd/boot/uImage-v3.10-overlayfs
+ln -sf uImage-v3.10-overlayfs $RFShdd/boot/uImage
+cp arch/arm/boot/dts/kirkwood-dns325.dtb $RFShdd/boot/
+make INSTALL_MOD_PATH=$RFShdd modules_install
+
+
+#######################################################################################################################
+## Credits: 
+## http://labs.opinsys.com/blog/2012/10/08/building-and-packaging-kernels/#patching-the-kernel-with-overlayfs--la-git
+## http://jamie.lentin.co.uk/devices/dlink-dns325/
+#######################################################################################################################
