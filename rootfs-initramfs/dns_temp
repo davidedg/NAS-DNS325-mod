@@ -1,0 +1,10 @@
+#!/bin/bash
+# Get temperature from a Dlink DNS-325's microcontroller
+temp_file="`ls -1 /sys/class/hwmon/hwmon?/device/temp1_input 2>/dev/null`"
+if [ -n "$temp_file" ]; then
+  echo $[`cat $temp_file` / 1000]
+  exit 0
+else
+  echo 80
+  exit 0
+fi

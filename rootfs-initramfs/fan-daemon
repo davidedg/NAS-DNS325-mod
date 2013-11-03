@@ -1,0 +1,50 @@
+#!/bin/sh
+
+low_thresh=40
+high_thresh=50
+hysteresis=2
+
+fan_device=$(find /sys/devices -name fan1_target)
+if [ "$fan_device" = "" ]; then
+        shutdown -h +2 "FAN FAILURE OR CANT FIND FAN DEVICE UNDER /sys/devices/*/fan1_target"
+        exit 2
+fi
+
+if [ ! -w $fan_device ]; then
+        shutdown -h +2 "FAN FAILURE OR CANT FIND FAN DEVICE UNDER /sys/devices/*/fan1_target"
+        exit 2
+fi
+
+
+
+debug() { :; }
+
+speed=0
+# Fetch all useful temperature readings
+while true; do
+  debug -n "Temperatures: "
+  temp=0
+  temps="$(/usr/bin/dns_temp)"
+  # No HDD temperature for now, triggers HDD idle timer
+  # temps="$temps $(hddtemp -n /dev/disk/by-id/ata-*)"
+  for t in $temps; do
+    debug -n "$t "
+    [ $temp -lt $t ] && temp=$t
+  done
+  debug "\nMaximum temperature: $temp"
+
+  if [ $temp -lt $((low_thresh - hysteresis)) ]; then
+    speed=0
+  elif [ $temp -lt $low_thresh ]; then
+    [ $speed -gt 3000 ] && speed=3000
+  elif [ $temp -lt $((high_thresh - hysteresis)) ]; then
+    speed=3000
+  elif [ $temp -lt $high_thresh ]; then
+    [ $speed -lt 3000 ] && speed=3000
+  else
+    speed=6000
+  fi
+  debug "Fan speed: $speed"
+  echo $speed > $fan_device
+  sleep 10
+done
