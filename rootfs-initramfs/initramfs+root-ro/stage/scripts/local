@@ -1,0 +1,70 @@
+
+pre_mountroot()
+{
+	run_scripts /scripts/local-top
+
+	# Load ubi with the correct MTD partition and return since fstype
+	# doesn't work with a char device like ubi.
+	if [ "${UBIMTD}empty" != "empty" ]; then
+		if [ ""  = "$(/bin/grep -m1 ubifs /proc/filesystems)" ]; then
+			echo "${MSGTAG_INITRAMFS}: UBIFS support not loaded, please consider building kernel with"
+			echo "${MSGTAG_INITRAMFS}: CONFIG_MTD_UBI=y and CONFIG_UBIFS_FS=y"
+			ecgi "Modprobing module ubi"
+			modprobe ubi mtd=${UBIMTD}
+			sleep 3
+		fi
+
+		if [ ! -e /dev/ubi0 ]; then
+			echo "${MSGTAG_INITRAMFS}: /dev/ubi0 not found, will try ubiattach"
+			[ -x $(which ubiattach) ] || panic "${MSGTAG_INITRAMFS}: ubiattach not found."
+			ubiattach -m ${UBIMTD} /dev/ubi_ctrl
+			sleep 3
+		fi
+
+		ROOTFSTYPE=ubifs
+		ROOT=ubi0:${ROOT}
+		return
+	fi
+
+	# If the root device hasn't shown up yet, give it a little while
+	# to deal with removable devices
+	if [ ! -e "${ROOT}" ]; then
+
+		# Default delay is 30s
+		slumber=${ROOTDELAY:-30}
+
+		echo "${MSGTAG_INITRAMFS}: waiting ${slumber} sec. for ${ROOT}"
+
+		slumber=$(( ${slumber} * 10 ))
+		while [ ! -e "${ROOT}" ]; do
+			/bin/sleep 0.1
+			slumber=$(( ${slumber} - 1 ))
+			[ ${slumber} -gt 0 ] || break
+		done
+	fi
+
+	# If root device still not present, panic to let user try fix it
+	while [ ! -e "${ROOT}" ]; do
+		echo " ~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~- "
+		panic "${MSGTAG_INITRAMFS}: ERROR: ${ROOT} does not exist.  Dropping to a shell!"
+	done
+}
+
+mountroot()
+{
+	pre_mountroot
+
+	run_scripts /scripts/local-premount
+
+	# Mount root
+	if [ -z "${ROOTFSTYPE}" ]; then
+		mount ${roflag} ${ROOTFLAGS} ${ROOT} ${rootmnt}
+	else
+		if [ ""  = "$(/bin/grep -m1 ${ROOTFSTYPE} /proc/filesystems)" ]; then
+			modprobe ${ROOTFSTYPE}
+		fi
+		mount ${roflag} -t ${ROOTFSTYPE} ${ROOTFLAGS} ${ROOT} ${rootmnt}
+	fi
+
+	run_scripts /scripts/local-bottom
+}
