@@ -1,0 +1,98 @@
+
+
+# Create dedicated user
+useradd  --system --create-home --no-log-init twonky
+mv /home/twonky /mnt/data-d1/
+ln -s /mnt/data-d1/twonky /home/
+
+
+DL http://twonkyforum.com/viewtopic.php?f=16&t=7653
+-> NAS Versions (Limited Support)
+
+mkdir -p /usr/local/twonky
+cd /usr/local/twonky
+wget http://www.twonkyforum.com/downloads/7.0.9-Special//twonky-kirkwood-special-7.0.9.zip
+unzip
+rm twonky-kirkwood-special-7.0.9.zip
+
+chown -R twonky:twonky /usr/local/twonky
+find /usr/local/twonky -type f |xargs chmod -x
+cd /usr/local/twonky
+chmod +x ... files
+
+
+edit /usr/local/twonky/twonky.sh
+###########################################################################
+#!/bin/sh
+#
+# MediaServer Control File written by Itzchak Rehberg
+# Modified for fedora/redhat by Landon Bradshaw <phazeforward@gmail.com>
+# Adapted to Twonky 3.0 by TwonkyVision GmbH
+# Adapted to Twonky 4.0 by TwonkyVision GmbH
+# Adapted to Twonky 5.0 by PacketVideo
+#
+# This script is intended for SuSE and Fedora systems.
+#
+#
+###############################################################################
+#
+### BEGIN INIT INFO
+# Provides:       twonkyserver
+# Required-Start: $network $remote_fs
+# Required-Stop:  $network $remote_fs
+# Default-Start:  2 3 4 5
+# Default-Stop:   0 1 2 6
+# Description:    Twonky UPnP server
+### END INIT INFO
+#
+# Comments to support chkconfig on RedHat/Fedora Linux
+# chkconfig: 345 71 29
+# description: Twonky UPnP server
+#
+#==================================================================[ Setup ]===
+
+# DAVIDEG: re-run as limited user
+CHUSER=twonky
+
+if [ ! `id -u -n` = $CHUSER ]; then
+    reldir=`dirname $0`
+    absdir=`cd $reldir; pwd`
+    relpath=`basename $0`
+    abspath=${absdir}/${relpath}
+    argv=$@
+    echo $argv
+    su -l $CHUSER -c "$abspath ${argv}"
+    exit $?
+fi
+
+if [ ! -d ~/.twonky ]; then
+    mkdir ~/.twonky
+fi
+
+WORKDIR1="/usr/local/twonky"
+....
+###################################################################################
+
+
+
+# Run first time:
+su - twonky -c '/usr/local/twonky/twonky.sh start'
+
+
+Check and configure: http://IP_of_NAS:9000
+
+#Stop:
+su - twonky -c '/usr/local/twonky/twonky.sh stop'
+
+
+# Make it a service
+cp twonky.sh /etc/init.d
+insserv twonky.sh
+
+# try it:
+service twonky.sh start
+
+# make it run at startup
+update-rc.d twonky.sh enable
+
+
