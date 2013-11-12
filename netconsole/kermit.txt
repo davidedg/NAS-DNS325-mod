@@ -1,0 +1,11 @@
+
+
+set line /dev/ttyS0
+set baud 115200
+set carrier-watch off
+set flow-control none
+
+
+c
+
+

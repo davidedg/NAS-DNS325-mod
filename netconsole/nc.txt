@@ -1,0 +1,8 @@
+setenv serverip 192.168.0.250
+setenv ipaddr 192.168.0.100
+setenv if_netconsole 'ping $serverip'
+setenv start_netconsole 'setenv ncip $serverip; setenv bootdelay 10; setenv stdin nc; setenv stdout nc; setenv stderr nc; version;'
+
+setenv preboot 'run if_netconsole start_netconsole'
+
+
