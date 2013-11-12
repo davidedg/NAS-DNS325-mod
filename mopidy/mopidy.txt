@@ -69,7 +69,7 @@ start)
 stop)
         echo "Stopping Mopidy Daemon"
         killall -u mopidy
-		sleep 10
+		sleep 4
 		killall -s 9 -u mopidy
 ;;
  
@@ -98,7 +98,10 @@ chmod 0640 /home/mopidy/.config/mopidy/mopidy.conf
 vi  /home/mopidy/.config/mopidy/mopidy.conf
 #################################################################
 [http]
-enabled = false
+enabled = true
+hostname = 0.0.0.0
+static_dir = ~/webclient
+
 
 [mpd]
 enabled=true
@@ -116,6 +119,13 @@ bitrate = 320
 timeout = 10
 #################################################################
 
+
+
+
+# set ownership
+chown -R mopidy:mopidy /home/mopidy/*
+
+
 # RESCAN LOCAL LIBRARY:
 su - mopidy -c 'mopidy-scan'
 
@@ -124,5 +134,65 @@ su - mopidy -c 'mopidy-scan'
 insserv mopidy
 update-rc.d mopidy enable
 
+
+
+# Download some HTTP-Clients
+
+
+mkdir /home/mopidy/webclient-woutervanwijk
+wget -P /home/mopidy/webclient-woutervanwijk --no-check-certificate https://github.com/woutervanwijk/Mopidy-Webclient/archive/master.zip
+
+mkdir /home/mopidy/webclient-lux
+wget -P /home/mopidy/webclient-lux --no-check-certificate https://github.com/dz0ny/mopidy-lux/archive/master.zip
+
+mkdir /home/mopidy/webclient-jukepi
+wget -P /home/mopidy/webclient-jukepi --no-check-certificate https://github.com/meantimeit/jukepi/archive/dev.zip
+
+
+apt-get install unzip
+
+
+
+# Unpack all of them
+
+cd /home/mopidy/webclient-woutervanwijk
+unzip master.zip
+rm master.zip
+cd Mopidy-Webclient-master/
+mv * .[^.]* ..
+cd ..
+rmdir Mopidy-Webclient-master
+
+
+
+cd /home/mopidy/webclient-lux
+unzip master.zip
+rm master.zip
+cd mopidy-lux-master/
+mv * .[^.]* ..
+cd ..
+rmdir mopidy-lux-master
+
+
+
+cd /home/mopidy/webclient-jukepi
+unzip dev.zip
+rm dev.zip
+cd jukepi-dev/
+mv * .[^.]* ..
+cd ..
+rmdir jukepi-dev
+
+
+# Now choose which one you like (restart mopidy and clear browser cache when you switch):
+
+rm /home/mopidy/webclient && ln -sf webclient-woutervanwijk/webclient /home/mopidy/webclient
+rm /home/mopidy/webclient && ln -sf webclient-woutervanwijk/flatclient /home/mopidy/webclient
+rm /home/mopidy/webclient && ln -sf webclient-lux/dist /home/mopidy/webclient
+rm /home/mopidy/webclient && ln -sf webclient-jukepi/build /home/mopidy/webclient
+
+
+# set ownership
+chown -R mopidy:mopidy /home/mopidy/*
 
 
