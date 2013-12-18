@@ -127,7 +127,7 @@ chown -R mopidy:mopidy /home/mopidy/*
 
 
 # RESCAN LOCAL LIBRARY:
-su - mopidy -c 'mopidy-scan'
+su - mopidy -c 'mopidy local scan'
 
 
 # Make it run at startup
