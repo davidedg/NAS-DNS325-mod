@@ -155,6 +155,7 @@ apt-get install unzip
 
 # Unpack all of them
 
+# woutervanwijk's - https://github.com/woutervanwijk/Mopidy-WebClient
 cd /home/mopidy/webclient-woutervanwijk
 unzip master.zip
 rm master.zip
@@ -163,8 +164,10 @@ mv * .[^.]* ..
 cd ..
 rmdir Mopidy-Webclient-master
 
+# add your radio streams to js/functionsvars.js - see 
 
 
+# dz0ny's LUX - https://github.com/dz0ny/mopidy-lux
 cd /home/mopidy/webclient-lux
 unzip master.zip
 rm master.zip
@@ -174,7 +177,7 @@ cd ..
 rmdir mopidy-lux-master
 
 
-
+# meantimeit's JukePi - https://github.com/meantimeit/jukepi
 cd /home/mopidy/webclient-jukepi
 unzip dev.zip
 rm dev.zip
@@ -183,16 +186,20 @@ mv * .[^.]* ..
 cd ..
 rmdir jukepi-dev
 
+# JukePi dependencies
+
+
+# set ownership
+chown -R mopidy:mopidy /home/mopidy/*
+
+
 
 # Now choose which one you like (restart mopidy and clear browser cache when you switch):
+# I like the woutervanwijk/webclient as I feel is the most complete.
 
 rm /home/mopidy/webclient && ln -sf webclient-woutervanwijk/webclient /home/mopidy/webclient
 rm /home/mopidy/webclient && ln -sf webclient-woutervanwijk/flatclient /home/mopidy/webclient
 rm /home/mopidy/webclient && ln -sf webclient-lux/dist /home/mopidy/webclient
 rm /home/mopidy/webclient && ln -sf webclient-jukepi/build /home/mopidy/webclient
-
-
-# set ownership
-chown -R mopidy:mopidy /home/mopidy/*
 
 
