@@ -10,7 +10,15 @@ deb-src http://apt.mopidy.com/ stable main contrib non-free
 EOF
 
 apt-get update
-apt-get --install-recommends install mopidy mopidy-spotify
+apt-get --install-recommends install mopidy
+
+# Spotify Extension
+apt-get --install-recommends install mopidy-spotify
+
+# Google Play Music Extension:
+apt-get install python-pip
+pip install gmusicapi
+
 
 
 # TEST GSTREAMER AUDIO output
@@ -62,9 +70,7 @@ SCRIPTNAME=/etc/init.d/$NAME
 case "$1" in
 start)
         echo "Starting Mopidy Daemon"
-        start-stop-daemon --start --chuid $CHUSER --background --exec /usr/bin/mopidy \
-                --pidfile $PIDFILE --make-pidfile \
-                -- 2>/var/log/mopidy.log
+        start-stop-daemon --start --chuid $CHUSER --background --exec /usr/bin/mopidy --pidfile $PIDFILE --make-pidfile
 ;;
 stop)
         echo "Stopping Mopidy Daemon"
@@ -72,14 +78,19 @@ stop)
 		sleep 4
 		killall -s 9 -u mopidy
 ;;
- 
 restart)
         $0 stop
         $0 start
 ;;
+debug)
+        $0 stop
+        echo "Starting Debug Run of Mopidy"
+        start-stop-daemon --start --chuid $CHUSER --exec /usr/bin/mopidy
+        $0 stop
+;;
  
 *)
-        echo "Usage: $0 {start|stop|restart}"
+        echo "Usage: $0 {start|stop|restart|debug}"
         exit 1
 esac
 ##############################################################################
@@ -88,8 +99,9 @@ esac
 chmod +x /etc/init.d/mopidy
 
 
-# Run it once to create home structure
-service mopidy start
+# Run it once to create home structure and default config
+service mopidy debug
+# It should auto exit with errors, it's fine.
 
 # protect your credentials...
 chmod 0640 /home/mopidy/.config/mopidy/mopidy.conf
@@ -97,6 +109,7 @@ chmod 0640 /home/mopidy/.config/mopidy/mopidy.conf
 # Then complete configuration:
 vi  /home/mopidy/.config/mopidy/mopidy.conf
 #################################################################
+
 [http]
 enabled = true
 hostname = 0.0.0.0
@@ -116,17 +129,26 @@ enabled = true
 username = username
 password = ********
 bitrate = 320
-timeout = 10
+
+[gmusic]
+enabled = true
+username = user@gmail.com
+password =  < you can create an APP password here >
+deviceid = < get it with your phone by dialing *#*#8255#*#* and look for "aid" >
+
+
+
 #################################################################
 
 
 
-
-# set ownership
-chown -R mopidy:mopidy /home/mopidy/*
+# Ensure correct ownership
+chown -R mopidy:mopidy /home/mopidy/
 
 
 # RESCAN LOCAL LIBRARY:
+su - mopidy -c 'mkdir -p touch /home/mopidy/.local/share/mopidy/local/playlists'
+su - mopidy -c 'touch /home/mopidy/.local/share/mopidy/local/tag_cache'
 su - mopidy -c 'mopidy local scan'
 
 
@@ -136,6 +158,9 @@ update-rc.d mopidy enable
 
 
 
+
+
+###############################################
 # Download some HTTP-Clients
 
 
@@ -149,11 +174,9 @@ mkdir /home/mopidy/webclient-jukepi
 wget -P /home/mopidy/webclient-jukepi --no-check-certificate https://github.com/meantimeit/jukepi/archive/dev.zip
 
 
-apt-get install unzip
-
-
 
 # Unpack all of them
+apt-get install unzip
 
 # woutervanwijk's - https://github.com/woutervanwijk/Mopidy-WebClient
 cd /home/mopidy/webclient-woutervanwijk
@@ -164,7 +187,7 @@ mv * .[^.]* ..
 cd ..
 rmdir Mopidy-Webclient-master
 
-# add your radio streams to js/functionsvars.js - see 
+# add your radio streams to js/functionsvars.js - see radiostreams.txt
 
 
 # dz0ny's LUX - https://github.com/dz0ny/mopidy-lux
@@ -202,4 +225,6 @@ rm /home/mopidy/webclient && ln -sf webclient-woutervanwijk/flatclient /home/mop
 rm /home/mopidy/webclient && ln -sf webclient-lux/dist /home/mopidy/webclient
 rm /home/mopidy/webclient && ln -sf webclient-jukepi/build /home/mopidy/webclient
 
+
+###########################################################
 
