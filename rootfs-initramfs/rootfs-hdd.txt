@@ -312,9 +312,8 @@ UTC
 END
 
 
-## Fix a strange error with overlayfs:
+## Customized rc.local (see file for details)
 cp rc.local $RFShdd/etc/
-
 
 
 ##################################################
