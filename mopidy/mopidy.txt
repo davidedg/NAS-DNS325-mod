@@ -147,17 +147,13 @@ chown -R mopidy:mopidy /home/mopidy/
 
 
 # RESCAN LOCAL LIBRARY:
-su - mopidy -c 'mkdir -p touch /home/mopidy/.local/share/mopidy/local/playlists'
+su - mopidy -c 'mkdir -p /home/mopidy/.local/share/mopidy/local/playlists'
 su - mopidy -c 'touch /home/mopidy/.local/share/mopidy/local/tag_cache'
 su - mopidy -c 'mopidy local scan'
 
 
 # Make it run at startup
 insserv mopidy
-update-rc.d mopidy enable
-
-
-
 
 
 ###############################################
@@ -227,4 +223,13 @@ rm /home/mopidy/webclient && ln -sf webclient-jukepi/build /home/mopidy/webclien
 
 
 ###########################################################
+
+JukePi:
+
+apt-get install git
+su - mopidy -c 'git config --global http.sslVerify false'
+su - mopidy -c 'git clone git://github.com/meantimeit/jukepi.git && cd jukepi && git submodule update --init --recursive'
+su - mopidy -c 'git config --global http.sslVerify true'
+
+
 

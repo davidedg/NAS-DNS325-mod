@@ -93,6 +93,5 @@ insserv twonky.sh
 service twonky.sh start
 
 # make it run at startup
-update-rc.d twonky.sh enable
-
+insserv twonky.sh
 
