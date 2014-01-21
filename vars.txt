@@ -10,6 +10,7 @@ NASIP=192.168.0.100
 NASGW=192.168.0.254
 NASHOSTNAME=nasivadaras.ivadaras.lan
 
+UBOOTWORKDIR=/root/nas/uboot
 
 KERNELWORKDIR=/root/nas/kernel
 

@@ -6,9 +6,24 @@
 DOWNLOAD U-Boot:
 ftp://ftp.denx.de/pub/u-boot/
 
-wget ftp://ftp.denx.de/pub/u-boot/u-boot-2013.07.tar.bz2
-tar xjf u-boot-2013.07.tar.bz2
-cd u-boot-2013.07
+cd $UBOOTWORKDIR
+wget ftp://ftp.denx.de/pub/u-boot/u-boot-2014.01.tar.bz2
+tar xjf u-boot-2014.01.tar.bz2
+cd u-boot-2014.01
+
+
+##################################################
+# ENABLE EFI/GPT SUPPORT
+##################################################
+
+echo -e "" >> ./include/configs/dns325.h
+echo -e "/*" >> ./include/configs/dns325.h
+echo -e " * Enable EFI/GPT Partitions" >> ./include/configs/dns325.h
+echo -e " */" >> ./include/configs/dns325.h
+echo -e "#ifndef CONFIG_EFI_PARTITION" >> ./include/configs/dns325.h
+echo -e "#define CONFIG_EFI_PARTITION" >> ./include/configs/dns325.h
+echo -e "#endif" >> ./include/configs/dns325.h
+
 
 ##################################################
 # (optional) ENABLE PREBOOT COMMAND (for netconsole)
@@ -22,9 +37,13 @@ PLEASE PAY REALLY ATTENTION IF YOU USE PREBOOT COMMAND,
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-You will have to manually insert this line in include/configs/dns325.h
-
-"#define CONFIG_PREBOOT"
+echo -e "" >> ./include/configs/dns325.h
+echo -e "/*" >> ./include/configs/dns325.h
+echo -e " * Enable PREBOOT Command" >> ./include/configs/dns325.h
+echo -e " */" >> ./include/configs/dns325.h
+echo -e "#ifndef CONFIG_PREBOOT" >> ./include/configs/dns325.h
+echo -e "#define CONFIG_PREBOOT" >> ./include/configs/dns325.h
+echo -e "#endif" >> ./include/configs/dns325.h
 
 
 ##################################################
@@ -36,18 +55,24 @@ make distclean
 make dns325_config
 make u-boot.kwb
 
+final output:
+
 	Preparing kirkwood boot image to boot from nand
 	Nand ECC mode = default
 	Nand page size = 0x800
 	Image Type:   Kirkwood Boot from NAND Flash Image
-	
-	Data Size:    421468 Bytes = 411.59 kB = 0.40 MB
+	Data Size:    430620 Bytes = 420.53 kB = 0.41 MB
 	Load Address: 00600000
 	Entry Point:  00600000
 
+# ls -al *.kwb
+-rw-r--r-- 1 root root 431136 Jan 21 18:36 u-boot.kwb
+
+
+
 
 ##################################################
-# INSTALLING NEW U-BOOT
+# INSTALLING NEW U-BOOT on NAND (mtd0)
 ##################################################
 
 Format a usb stick as ext2fs and copy u-boot.kwb on it.
@@ -68,18 +93,29 @@ ram and then write it from ram to MTD-0:
 
     THIS IS THE MOST DANGEROUS PART
 	STRONGLY CONSIDER USING AN UPS FOR THE FLASH OPERATION.
-	IF BAD THINGS HAPPEN HERE, LAST CHANCE OF REVOERY IS KWARTBOOT
+	IF BAD THINGS HAPPEN HERE, LAST CHANCE OF RECOVERY IS KWARTBOOT
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
-These are the commands: 
+These are the commands to issue, enter them one at a time and 
+double check before pressing enter
 
 usb reset
 ext2load usb 0:1 0x1000000 /u-boot.kwb
 nand erase 0x000000 0xe0000
 nand write 0x1000000 0x000000 0xe0000
 reset
+
+
+Brief Explanation:
+resets usb to identify the usb stick
+load from usb device 0, partition 1, assuming ext2 fs, a file 
+  named "/u-boot.kwb" in ram at position 0x1000000
+erase NAND blocks from address 0 to address 896KB (0xe0000), which is size 
+  reserved for u-boot on standard partitioning on this platform
+write from ram at position 0x1000000 to NAND at position 0 for 896KB
+reboot
 
 
 ###############################################################
@@ -128,7 +164,7 @@ scanning bus 0 for devices... 2 USB Device(s) found
 
 Marvell>> ext2load usb 0:1 0x1000000 /u-boot.kwb
 
-414756 bytes read in 230 ms (1.7 MiB/s)
+431136 bytes read in 317 ms (1.3 MiB/s)
 Marvell>> nand erase 0x000000 0xe0000
 NAND erase: device 0 offset 0x0, size 0xe0000
 Erasing at 0xc0000 -- 100% complete.
@@ -143,7 +179,7 @@ Marvell>> reset
 
 resetting ...
 
-U-Boot 2013.07 (Jul 25 2013 - 23:41:23)
+U-Boot 2014.01 (Jan 21 2014 - 18:35:47)
 D-Link DNS-325
 
 SoC:   Kirkwood 88F6281_A1
@@ -154,14 +190,14 @@ In:    serial
 Out:   serial
 Err:   serial
 Net:   egiga0 [PRIME]
-
 Hit any key to stop autoboot:  0
 => version
 
-U-Boot 2013.07 (Jul 25 2013 - 23:41:23)
+U-Boot 2014.01 (Jan 21 2014 - 18:35:47)
 D-Link DNS-325
 arm-none-eabi-gcc (Sourcery CodeBench Lite 2013.05-23) 4.7.3
 GNU ld (Sourcery CodeBench Lite 2013.05-23) 2.23.52.20130219
+
 
 
 
