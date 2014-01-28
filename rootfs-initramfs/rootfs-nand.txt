@@ -7,7 +7,7 @@ USE THE "vars.txt" commands to prepare the environment variables we will use.
 ##################################################
 
 The new kernel will need a rootfs to bootstrap.
-For the HDD version, I chose a standard Debian 7 installation, with minimal packages.
+For the HDD and USB version, I chose a standard Debian 7 installation, with minimal packages.
 For the NAND version, the packages selection is smaller and I used EMDEBIAN to reduce to the bone the size.
 
 I used multistrap (as opposed to debootstrap) because it's the preferred way for EMDEBIAN.
@@ -213,7 +213,7 @@ END
 cat <<END > $RFSnand/etc/fstab
 /dev/root       /               auto       defaults,noatime,errors=remount-ro      0  0
 tmpfs           /tmp            tmpfs      defaults 0 0
-LABEL=uboot-boot    /boot   auto    ro,nodev,nosuid,noexec,noatime,errors=remount-ro   0   0
+#LABEL=uboot-boot    /boot   auto    ro,nodev,nosuid,noexec,noatime,errors=remount-ro   0   0
 #UUID=ece46cea-fafe-478e-a995-6e57ef7a1738       none            swap    sw      0       0
 END
 
@@ -236,11 +236,14 @@ END
 
 # Configuration for fw_printenv / fw_setenv
 cat <<END > $RFSnand/etc/fw_env.config
-#/dev/mtd0  0x000000000000-0x0000000e0000 : "u-boot"
-#/dev/mtd1  0x0000000e0000-0x000000100000 : "u-boot-env"
-#/dev/mtd2  0x000000100000-0x000008000000 : "rootmtd"
+#/dev/mtd0      0x00000000-0x00100000 : "u-boot"
+#/dev/mtd1      0x00100000-0x00600000 : "uImage"
+#/dev/mtd2      0x00600000-0x00b00000 : "ramdisk"
+#/dev/mtd3      0x00b00000-0x07100000 : "image"
+#/dev/mtd4      0x07100000-0x07b00000 : "mini firmware"
+#/dev/mtd5      0x07b00000-0x08000000 : "config"
 # MTD device name       Device offset   Env. size       Flash sector size       Number of sectors
-/dev/mtd1               0x00000         0x20000         0x20000
+/dev/mtd0               0xE0000         0x20000         0x20000
 END
 
 
@@ -260,8 +263,10 @@ cp dns_temp $RFSnand/usr/bin/dns_temp
 
 
 # Overwrite fan-daemon with updated version (fan device changed path in recent kernels)
+# fan_device=$(find /sys/devices -name fan1_target)
+# 
 cp fan-daemon $RFSnand/usr/sbin/fan-daemon
-fan_device=$(find /sys/devices -name fan1_target)
+
 
 
 
@@ -292,7 +297,7 @@ chmod +x $RFSnand/usr/local/sbin/button-usbcopy
 
 
 ## free up some more space
-find -type f $RFSnand/usr/share/doc/ -name "*" -delete
+find $RFSnand/usr/share/doc/ -type f -name "*" -delete
 find $RFSnand/etc/ -name "*~" -delete
 find $RFSnand/var/cache/debconf/ -name "*-old" -delete
 find $RFSnand/var/lib/dpkg/ -name "*-old" -delete

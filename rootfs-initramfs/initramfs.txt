@@ -44,12 +44,13 @@ ln -s busybox $NASINITRAMFS/stage/bin/sh
 
 
 # This script will automate the build process of initramfs image
+# For STOCK U-Boot, INITRD/INITRAMFS must be at 0x00e00000, otherwise it'll lock at "Starting Kernel"
 cat <<EOF > $NASINITRAMFS/make-uInitramfs
 #!/bin/sh
 cd stage
 find . | cpio -H newc -o | gzip >../uInitramfs.cpio.gz
 cd ..
-mkimage -A arm -O linux -T ramdisk -C gzip -a 0 -e 0 -n $NASINITRAMFSNAME -d uInitramfs.cpio.gz uInitramfs
+mkimage -A arm -O linux -T ramdisk -C gzip -a 0x00e00000 -e 0x00e00000 -n $NASINITRAMFSNAME -d uInitramfs.cpio.gz uInitramfs
 EOF
 
 chmod +x $NASINITRAMFS/make-uInitramfs
@@ -89,13 +90,13 @@ chmod +x $NASINITRAMFS/stage/scripts/init-bottom/root-ro-overlayfs
 Make Image:
 cd $NASINITRAMFS
 ./make-uInitramfs
-    2179 blocks
-    Image Name:   DNS325-Initramfs
-    Created:      Fri Jul 26 21:55:43 2013
-    Image Type:   ARM Linux RAMDisk Image (gzip compressed)
-    Data Size:    628731 Bytes = 614.00 kB = 0.60 MB
-    Load Address: 00000000
-    Entry Point:  00000000
+	2199 blocks
+	Image Name:   DNS325-Initramfs
+	Created:      Sat Jan 25 18:19:41 2014
+	Image Type:   ARM Linux RAMDisk Image (gzip compressed)
+	Data Size:    632255 Bytes = 617.44 kB = 0.60 MB
+	Load Address: 00e00000
+	Entry Point:  00e00000
 
 
 ##################################################
