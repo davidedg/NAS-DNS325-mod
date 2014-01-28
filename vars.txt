@@ -5,6 +5,7 @@ RFShdd=$RFShddPATH/rfshdd
 RFSnandPATH=/root/nas/rootfs
 RFSnandCFG=$RFSnandPATH/multistrap-nand.cfg
 RFSnand=$RFSnandPATH/rfsnand
+
 NASMAC=C8:BE:19:03:46:4E
 NASIP=192.168.0.100
 NASGW=192.168.0.254

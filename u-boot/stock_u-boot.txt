@@ -1,0 +1,97 @@
+
+Via serial console, interrupt u-boot sequence.
+To interrupt U-Boot, it depends on the version:
+ - Custom U-Boot: just press any key.
+ - DLINK stock u-boot: you have to press "1" and then SPACE.
+		do it as soon as you see text on serial, or you might miss the correct time.
+
+ 
+
+######################################################
+ORIGINAL STOCK U-BOOT ENVIRONMENT IS: 
+######################################################
+loads_echo=0
+ipaddr=2.66.66.201
+serverip=2.66.66.32
+rootpath=/mnt/ARM_FS/
+netmask=255.255.255.0
+CASset=min
+MALLOC_len=1
+ethprime=egiga0
+bootargs_root=root=/dev/nfs rw
+bootargs_end=:::DB88FXX81:eth0:none
+image_name=uImage
+standalone=fsload 0x2000000 $(image_name);setenv bootargs $(console) root=/dev/mtdblock0 rw ip=$(ipaddr):$(serverip)$(bootargs_end) $(mvPhoneConfig); bootm 0x2000000;
+ethmtu=1500
+mvPhoneConfig=mv_phone_config=dev0:fxs,dev1:fxs
+mvNetConfig=mv_net_config=(00:11:88:0f:62:81,0:1:2:3),mtu=1500
+usb0Mode=host
+yuk_ethaddr=00:00:00:EE:51:81
+nandEcc=1bit
+netretry=no
+rcvrip=169.254.100.100
+loadaddr=0x02000000
+autoload=no
+ethact=egiga0
+baudrate=115200
+bootargs=root=/dev/ram console=ttyS0,115200 :::DB88FXX81:egiga0:none
+console=console=ttyS0,115200 mtdparts=nand_mtd:0xc0000@0(uboot)ro,0x7f00000@0x100000(root)
+ethaddr=00:50:43:76:37:10
+stdin=serial
+stdout=serial
+stderr=serial
+mainlineLinux=no
+enaMonExt=no
+enaCpuStream=no
+enaWrAllo=no
+pexMode=RC
+disL2Cache=no
+setL2CacheWT=yes
+disL2Prefetch=yes
+enaICPref=yes
+enaDCPref=yes
+sata_dma_mode=yes
+netbsd_en=no
+vxworks_en=no
+bootdelay=1
+disaMvPnp=no
+enaAutoRecovery=yes
+bootcmd=nand read.e 0xa00000 0x100000 0x300000;nand read.e 0xf00000 0x600000 0x300000;bootm 0xa00000 0xf00000
+######################################################
+
+
+What we want to do here is keeping environment clean for NAND boot.
+If present on HDD/USB, kernel and initramdisk will override at same position in ram.
+For this to work, since stock U-boot cannot set bootargs via IF statements, we have hardcoded cmdline
+in Kernel ( thank you Ingmar_K http://forum.doozan.com/read.php?3,14889 ).
+
+
+We will just change permanently the MAC address, since it's totally wrong and can affect our kernel:
+Just substitute with your MAC address on the sticker located on bottom of the NAS
+setenv ethaddr 'C8:BE:19:03:46:4E'
+saveenv
+
+#####
+# Common settings
+setenv uImageAddr 0xa00000
+setenv uInitramfsAddr 0xf00000
+# NAND
+setenv prepboot_from_nand 'echo LOADING FROM NAND; nand read.e 0xa00000 0x100000 0x300000;nand read.e 0xf00000 0x600000 0x300000'
+# HDD
+setenv hdd_load_uImage 'ext2load ide 0:1 ${uImageAddr} /uImage-xhdd'
+setenv hdd_load_uInitramfs 'ext2load ide 0:1 ${uInitramfsAddr} /uInitramfs'
+setenv prepboot_from_hdd 'echo TRY OVERRIDE FROM HDD; ide reset; run hdd_load_uImage; run hdd_load_uInitramfs'
+# USB
+setenv usb_load_uImage 'ext2load usb 0:1 ${uImageAddr} /boot/uImage-xusb'
+setenv usb_load_uInitramfs 'ext2load usb 0:1 ${uInitramfsAddr} /boot/uInitramfs'
+setenv prepboot_from_usb 'echo TRY OVERRIDE FROM USB; usb reset; run usb_load_uImage; run usb_load_uInitramfs'
+# CONDITIONAL BOOT
+setenv bootcmd 'run prepboot_from_nand; run prepboot_from_hdd; run prepboot_from_usb; bootm ${uImageAddr} ${uInitramfsAddr}'
+
+# Save environment
+####
+saveenv
+
+# reboot and look it boot
+reset
+

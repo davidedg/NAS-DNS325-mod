@@ -212,7 +212,7 @@ GNU ld (Sourcery CodeBench Lite 2013.05-23) 2.23.52.20130219
 The U-Boot environment (configuration) resides on 128KB part of the MTD, from 0x0E0000 to 0x100000.
 To change it, we do it from within U-Boot itself, via the "setenv" command.
 
-You can use the already prepared commands in ENV_FINAL.txt file
+You can use the already prepared commands in custom_u-boot.txt file
 Of course, adapt the commands to your network environment.
 
 The new configuration will set some required parameters and the new boot sequence will be:
@@ -223,14 +223,10 @@ The new configuration will set some required parameters and the new boot sequenc
 - try to boot from HDD 0
 		load IDE partition 1: kernel,dtb,uinitramfs and boot with root=LABEL=roothdd
 		so your hdd 1st partition must be EXTFS labelled with "roothdd" (use e2label)
+- if enabled, loads netconsole ( see http://forum.doozan.com/read.php?3,14,14 )
 - try to boot from MTD (UBI)
 		load NAND UBI volume named "rootmtd": kernel,dtb,uinitramfs and boot with root=LABEL=rootmtd
 		so both your UBI partition and volume must be named "rootmtd" (set during UBI creation)
-
-- If all else fails, load netconsole ( see http://forum.doozan.com/read.php?3,14,14 )
-
-
-
 
 
 #######################################################################################################################
