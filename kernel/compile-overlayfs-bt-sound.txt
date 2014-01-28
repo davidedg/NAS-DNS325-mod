@@ -31,7 +31,9 @@ while implementing it, so I share it anyway.
 
 OverlayFS is not yet supported in mainline kernel, but it is going to be accepted in the future.
 So we must use Torvald's kernel tree, together with the OverlayFS patches.
-If you prefer not to use OverlayFS at all, you can use kernel.org sources instead.
+
+If you prefer not to use OverlayFS at all, you can use kernel.org sources instead, 
+just go to the "CONFIGURE KERNEL" section.
 
 
 mkdir -p ${KERNELWORKDIR}
@@ -48,18 +50,18 @@ git clone git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git linux
 
 cd linux-overlayfs
 
-Enumerate latest available tags/branches:
+Enumerate latest available tags/branches (we will use the tag name in the rebase command later)
 git for-each-ref refs/tags --sort=-taggerdate --format='%(refname)' --count=10
-	refs/tags/v3.12-rc7
-	refs/tags/v3.12-rc6
-	refs/tags/v3.12-rc5
-	refs/tags/v3.12-rc4
-	refs/tags/v3.12-rc3
-	refs/tags/v3.12-rc2
-	refs/tags/v3.12-rc1
-	refs/tags/v3.11
-	refs/tags/v3.11-rc7
-	refs/tags/v3.11-rc6
+	refs/tags/v3.13
+	refs/tags/v3.13-rc8
+	refs/tags/v3.13-rc7
+	refs/tags/v3.13-rc6
+	refs/tags/v3.13-rc5
+	refs/tags/v3.13-rc4
+	refs/tags/v3.13-rc3
+	refs/tags/v3.13-rc2
+	refs/tags/v3.13-rc1
+	refs/tags/v3.12
 
 
 
@@ -68,42 +70,24 @@ Add a new git source for the OverlayFS code:
 
 git remote add overlayfs git://git.kernel.org/pub/scm/linux/kernel/git/mszeredi/vfs.git
 git fetch overlayfs
-	remote: Counting objects: 6261, done.
-	remote: Compressing objects: 100% (298/298), done.
-	remote: Total 2794 (delta 2509), reused 2753 (delta 2469)
-	Receiving objects: 100% (2794/2794), 470.12 KiB | 231 KiB/s, done.
-	Resolving deltas: 100% (2509/2509), completed with 630 local objects.
-	From git://git.kernel.org/pub/scm/linux/kernel/git/mszeredi/vfs
-	 * [new branch]      master     -> overlayfs/master
-	 * [new branch]      overlayfs.current -> overlayfs/overlayfs.current
-	 * [new branch]      overlayfs.v11 -> overlayfs/overlayfs.v11
-	 * [new branch]      overlayfs.v12 -> overlayfs/overlayfs.v12
-	 * [new branch]      overlayfs.v13 -> overlayfs/overlayfs.v13
-	 * [new branch]      overlayfs.v14 -> overlayfs/overlayfs.v14
-	 * [new branch]      overlayfs.v15 -> overlayfs/overlayfs.v15
-	 * [new branch]      overlayfs.v16 -> overlayfs/overlayfs.v16
-	 * [new branch]      overlayfs.v17 -> overlayfs/overlayfs.v17
-	 * [new branch]      overlayfs.v18 -> overlayfs/overlayfs.v18
-	 * [new branch]      overlayfs.v19 -> overlayfs/overlayfs.v19
-	 * [new branch]      overlayfs.v20 -> overlayfs/overlayfs.v20
 
-
-v18 is meant for kernel tree v3.10
 v19 is meant for kernel tree v3.11
-v20 should be for v3.12, not yet in stable tree
-
-I successfully used both v3.10/v18 and v3.11/v19
-
-
-Create a new Branch based on OVERLAYFS v18
-git checkout -b v3.10+overlayfs.v18 overlayfs/overlayfs.v18
-	Branch v3.10+overlayfs.v18 set up to track remote branch overlayfs.v18 from overlayfs.
-	Switched to a new branch 'v3.10+overlayfs.v18'
+v20 is meant for kernel tree v3.12
+v21 is meant for kernel tree v3.13
+... and so on
 
 
-Now apply the v3.10 Torvald's tree back to OverlayFS v18
+I successfully tried versions v3.10/v18 v3.11/v19 and v3.13/v21
+
+Now we will create a new branch based on v3.13/v21
+git checkout -b v3.13+overlayfs.v21 overlayfs/overlayfs.v21
+	Branch v3.13+overlayfs.v21 set up to track remote branch overlayfs.v21 from overlayfs.
+	Switched to a new branch 'v3.13+overlayfs.v21'
+
+
+Now apply the Torvald's tree back to OverlayFS tree
 	
-git rebase v3.10
+git rebase v3.13
 	First, rewinding head to replay your work on top of it...
 	Applying: vfs: add i_op->dentry_open()
 	Applying: vfs: export do_splice_direct() to modules
@@ -119,7 +103,21 @@ git rebase v3.10
 Commit our local git branch
 git add *
 git commit -m "Added OverlayFS support"
+"
+# On branch v3.13+overlayfs.v21
+# Your branch and 'overlayfs/overlayfs.v21' have diverged,
+# and have 222 and 9 different commits each, respectively.
+#
+nothing to commit (working directory clean)
 
+
+If you later want to update to newer kernels, just do (inside kernel tree):
+make distclean
+git fetch origin
+git fetch overlayfs
+
+and you can do a checkout, for example:
+git checkout -b v3.14+overlayfs.v22 overlayfs/overlayfs.v22
 
 
 
@@ -129,12 +127,13 @@ git commit -m "Added OverlayFS support"
 
 This will apply:
 	Kirkwood default config
+	enable a DTB-appended kernel to work even with stock U-Boot (which is not able to pass DTB structure).
 	Reduce Kernel Size not compiling unused stuff
-	Include some extra features.
+	Include some extra features (like sound, wifi, etc.)
+
 
 The 1st section is mandatory for the very minimal working of the NAS.
 Feel free to explore and add/remove features at your preference.
-
 
 
 While still in kernel tree directory
@@ -147,24 +146,20 @@ cat arch/arm/configs/kirkwood_defconfig - <<EOF > .config
 CONFIG_MACH_DLINK_KIRKWOOD_DT=y
 USE_OF=y
 CONFIG_SERIAL_OF_PLATFORM=y
-#
+# DTB-appended kernel for stock U-Boot
+CONFIG_ARM_APPENDED_DTB=y
+CONFIG_ARM_ATAG_DTB_COMPAT_CMDLINE_FROM_BOOTLOADER=y
+CONFIG_ARM_ATAG_DTB_COMPAT=y
+# sensors support
 CONFIG_I2C_GPIO=y
 CONFIG_I2C_MV64XXX=y
-#
 CONFIG_HWMON=y
 CONFIG_SENSORS_GPIO_FAN=y
 CONFIG_SENSORS_LM75=y
-#
-CONFIG_MTD_UBI=y
-CONFIG_UBIFS_FS=y
-#
+# initramfs support (to be able to use root=LABEL=)
 CONFIG_TMPFS=y
 CONFIG_BLK_DEV_INITRD=y
-# OVERLAYFS SUPPORT
-CONFIG_OVERLAYFS_FS=y
-CONFIG_TMPFS_XATTR=y
 #
-CONFIG_LOCALVERSION="+overlayfs"
 CONFIG_LOCALVERSION_AUTO=n
 #
 CONFIG_IKCONFIG=y
@@ -175,8 +170,52 @@ CONFIG_NET_VENDOR_MARVELL=y
 EOF
 
 
+
 cat <<EOF >>.config
-# VPN Support, OK for OpenVPN server
+# OVERLAYFS SUPPORT
+CONFIG_OVERLAYFS_FS=y
+CONFIG_TMPFS_XATTR=y
+EOF
+
+
+####
+#STOCK U-BOOT COMPATIBILITY FOR CONDITIONAL BOOTING
+####
+If you decide to keep STOCK U-Boot, you will face the problem that it's nearly
+impossible to do conditional boot, because there is no support for IF/test statements.
+A workaround for this issue is to make the bootargs BUILTIN in the kernel and 
+just IGNORE what the bootloader passes (which will be for original kernel on NAND).
+
+
+### FOR USB-stick:
+cat <<EOF >>.config
+CONFIG_CMDLINE="console=ttyS0,115200 root=LABEL=rootusb usb-storage.delay_use=0 rootdelay=10 mtdparts=nand_mtd:0xc0000@0(uboot)ro,0x7f00000@0x100000(root) :::DB88FXX81:egiga0:none"
+CONFIG_CMDLINE_FORCE=y
+EOF
+
+
+### FOR HDD:
+cat <<EOF >>.config
+CONFIG_CMDLINE="console=ttyS0,115200 root=LABEL=roothdd mtdparts=nand_mtd:0xc0000@0(uboot)ro,0x7f00000@0x100000(root) :::DB88FXX81:egiga0:none"
+CONFIG_CMDLINE_FORCE=y
+EOF
+
+
+####
+# UBI Support
+# I no longer use UBIfs, since I preserved the original stock firmware
+# on NAND, and just modified stock U-Boot environment to do multiboot (see above)
+# But, if you still want it, this is what you need:
+####
+cat <<EOF >>.config
+# UBI support
+CONFIG_MTD_UBI=y
+CONFIG_UBIFS_FS=y
+EOF
+
+
+cat <<EOF >>.config
+# VPN/OpenVPN support
 CONFIG_TUN=m
 CONFIG_L2TP=m
 EOF
@@ -196,21 +235,20 @@ CONFIG_EXT4_FS=y
 CONFIG_XFS_FS=m
 CONFIG_FUSE_FS=m
 CONFIG_MSDOS_FS=m
-CONFIG_VFAT_FS=m
-CONFIG_NTFS_FS=m
+CONFIG_VFAT_FS=y
+CONFIG_NTFS_FS=y
 CONFIG_NTFS_RW=y
 CONFIG_JFFS2_FS=m
-CONFIG_HFS_FS=m
-CONFIG_HFSPLUS_FS=m
+CONFIG_HFS_FS=y
+CONFIG_HFSPLUS_FS=y
 EOF
 
 
 
-# Enable my DLINK DWL-G122 rev C1 USB Wifi dongle
 cat <<EOF >>.config
-# Enable my DLINK DWL-G122 rev C1 USB Wifi dongle
+# Example of a WiFi Dongle: DLINK DWL-G122 rev C1 USB
 CONFIG_RT2X00=y
-CONFIG_RT73USB=m
+CONFIG_RT73USB=y
 EOF
 
 
@@ -218,6 +256,7 @@ EOF
 # BLUETOOTH + SOUND SUPPORT
 cat <<EOF >>.config
 # SOUND SUPPORT
+CONFIG_SOUND=m
 CONFIG_SND=m
 CONFIG_SND_SEQUENCER=m
 CONFIG_SND_SEQ_DUMMY=m
@@ -315,6 +354,41 @@ CONFIG_SECURITY_APPARMOR=n
 EOF
 
 
+# Set labels for configured features in kernel name and filename
+LOCALVERSION=""
+KERNELSUFFIX=""
+UIMAGE_SYMLINK=""
+
+grep "CONFIG_ARM_APPENDED_DTB=y" .config
+if [ $? = 0 ]; then
+  LOCALVERSION=${LOCALVERSION}+dtb
+  KERNELSUFFIX=${KERNELSUFFIX}-dtb
+fi
+
+grep "CONFIG_CMDLINE=.*LABEL=roothdd.*" .config
+if [ $? = 0 ]; then
+  LOCALVERSION=${LOCALVERSION}+xhdd
+  KERNELSUFFIX=${KERNELSUFFIX}-xhdd
+  UIMAGE_SYMLINK=-xhdd
+fi
+
+grep "CONFIG_CMDLINE=.*LABEL=rootusb.*" .config
+if [ $? = 0 ]; then
+  LOCALVERSION=${LOCALVERSION}+xusb
+  KERNELSUFFIX=${KERNELSUFFIX}-xusb
+  UIMAGE_SYMLINK=-xusb
+fi
+
+grep "CONFIG_OVERLAYFS_FS=y" .config
+if [ $? = 0 ]; then
+  LOCALVERSION=${LOCALVERSION}+ofs
+  KERNELSUFFIX=${KERNELSUFFIX}-ofs
+fi
+
+
+cat <<EOF >>.config
+CONFIG_LOCALVERSION="$LOCALVERSION"
+EOF
 
 
 
@@ -331,44 +405,57 @@ make menuconfig
 ##################################################
 
 
-Adjust -j (concurrent compilation jobs) for your host (I have 8 CPU threads)
+Newer U-boot versions can pass the DTB structure to the kernel directly.
+To support the STOCK U-Boot (which can only pass kernel+ramdisk), 
+we enable kernel feature CONFIG_ARM_APPENDED_DTB.
+So we first produce the zImage, append the DTB structure, and then compile it as uImage.
 
 
-make -j8 uImage modules kirkwood-dns325.dtb
+ (adjust -j for your host - mine has 8 CPUs)
+make -j8 zImage modules kirkwood-dns325.dtb
 
 .... lots of compiler/linker output....
 .... should end with:
+	  LD      arch/arm/boot/compressed/vmlinux
+	  OBJCOPY arch/arm/boot/zImage
+	  Kernel: arch/arm/boot/zImage is ready
 
-	Image Name:   Linux-3.10.0.overlayfs+
-	Created:      Sun Jul 28 15:48:21 2013
+
+
+cat arch/arm/boot/dts/kirkwood-dns325.dtb >> arch/arm/boot/zImage
+make uImage
+
+	Image Name:   Linux-3.13.0+dtb+xusb+ofs+
+	Created:      Tue Jan 28 00:09:21 2014
 	Image Type:   ARM Linux Kernel Image (uncompressed)
-	Data Size:    2928488 Bytes = 2859.85 kB = 2.79 MB
+	Data Size:    3364155 Bytes = 3285.31 kB = 3.21 MB
 	Load Address: 00008000
 	Entry Point:  00008000
 	  Image arch/arm/boot/uImage is ready
 
 
+	  
+
+	  
+	  
 ##################################################
-# INSTALL KERNEL into ROOTFS tree (NAND / HDD):
+# INSTALL KERNEL into ROOTFS tree:
 ##################################################
 
+# find current compiled version (Major.Minor)
+KERNELVERSION=$(grep -m5 "Linux/arm .* Kernel Configuration" .config | sed 's/.*Linux\/arm \(.*\) Kernel Configuration/\1/g' | cut -d. -f1-2)
 
-COPY uImage+DTB+modules to RootFS for NAND:
 
-cd ${KERNELWORKDIR}/linux-overlayfs
-cp arch/arm/boot/uImage $RFSnand/boot/uImage-v3.10-overlayfs
-ln -sf uImage-v3.10-overlayfs $RFSnand/boot/uImage
-cp arch/arm/boot/dts/kirkwood-dns325.dtb $RFSnand/boot/
+# COPY uImage+modules to RootFS for HDD/USB:
+cp arch/arm/boot/uImage $RFShdd/boot/uImage-v${KERNELVERSION}${KERNELSUFFIX}
+ln -sf uImage-v${KERNELVERSION}${KERNELSUFFIX} $RFShdd/boot/uImage${UIMAGE_SYMLINK}
+make INSTALL_MOD_PATH=$RFShdd modules_install
+
+# COPY uImage+modules to RootFS for NAND:
+cp arch/arm/boot/uImage $RFSnand/boot/uImage-v${KERNELVERSION}${KERNELSUFFIX}
+ln -sf uImage-v${KERNELVERSION}${KERNELSUFFIX} $RFSnand/boot/uImage
 make INSTALL_MOD_PATH=$RFSnand modules_install
 
-
-COPY uImage+DTB+modules to RootFS for HDD:
-
-cd ${KERNELWORKDIR}/linux-overlayfs
-cp arch/arm/boot/uImage $RFShdd/boot/uImage-v3.10-overlayfs
-ln -sf uImage-v3.10-overlayfs $RFShdd/boot/uImage
-cp arch/arm/boot/dts/kirkwood-dns325.dtb $RFShdd/boot/
-make INSTALL_MOD_PATH=$RFShdd modules_install
 
 
 #######################################################################################################################
