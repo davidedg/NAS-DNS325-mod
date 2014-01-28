@@ -1,0 +1,295 @@
+***************************************************
+USE THE "vars.txt" commands to prepare the environment variables we will use.
+***************************************************
+
+Note: the stock U-Boot does not recognize every usb key, so you may have 
+to try with different ones.
+
+
+# create usb stick ext2 with label
+mkfs.ext2 -L rootusb $USBTESTDEV
+
+# check label
+e2label $USBTESTDEV
+
+# mount, copy and detach
+mount $USBTESTDEV $USBTESTMNT
+cp -a $RFShdd/* $USBTESTMNT/
+sync
+umount $USBTESTMNT
+
+
+
+Now you can insert the usb stick in the rear port of nas and follow the U-Boot part
+(you can use custom or stock U-boot, see relative sections)
+
+The final output (stock u-boot) should be similar to this:
+
+##############################################################################
+ ** MARVELL BOARD: DB-88F6281A-BP LE
+
+U-Boot 1.1.4 (May 16 2011 - 10:40:38) Marvell version: 3.4.14.DNS-325.03
+
+U-Boot code: 00600000 -> 0067FFF0  BSS: -> 006CEE80
+
+Soc: MV88F6281 Rev 3 (DDR2)
+CPU running @ 1200Mhz L2 running @ 400Mhz
+SysClock = 400Mhz , TClock = 200Mhz
+
+DRAM CAS Latency = 5 tRP = 5 tRAS = 18 tRCD=6
+DRAM CS[0] base 0x00000000   size 256MB
+DRAM Total size 256MB  16bit width
+Flash:  0 kB
+Addresses 8M - 0M are saved for the U-Boot usage.
+Mem malloc Initialization (8M - 7M): Done
+NAND:128 MB
+
+CPU : Marvell Feroceon (Rev 1)
+
+Streaming disabled
+Write allocate disabled
+
+
+USB 0: host mode
+PEX 0: interface detected no Link.
+Net:   egiga0 [PRIME]
+Hit any key to stop autoboot:  0
+(Re)start USB...
+USB:   scanning bus for devices... 2 USB Device(s) found
+       scanning bus for storage devices... 1 Storage Device(s) found
+....
+...................................................................................................................................................................................................................................................................................................................................
+
+3363883 bytes read
+....
+........................................................
+
+632319 bytes read
+## Booting image at 00a00000 ...
+   Image Name:   Linux-3.13.0+overlayfs+
+   Created:      2014-01-25  16:47:39 UTC
+   Image Type:   ARM Linux Kernel Image (uncompressed)
+   Data Size:    3363819 Bytes =  3.2 MB
+   Load Address: 00008000
+   Entry Point:  00008000
+   Verifying Checksum ... OK
+OK
+## Loading Ramdisk Image at 00f00000 ...
+   Image Name:   DNS325-Initramfs
+   Created:      2014-01-25  17:19:41 UTC
+   Image Type:   ARM Linux RAMDisk Image (gzip compressed)
+   Data Size:    632255 Bytes = 617.4 kB
+   Load Address: 00e00000
+   Entry Point:  00e00000
+   Verifying Checksum ... OK
+
+Starting kernel ...
+
+Uncompressing Linux... done, booting the kernel.
+Booting Linux on physical CPU 0x0
+Linux version 3.13.0+overlayfs+ (root@debian) (gcc version 4.7.3 (Sourcery CodeBench Lite 2013.05-23) ) #1 PREEMPT Sat Jan 25 17:47:08 CET 2014
+CPU: Feroceon 88FR131 [56251311] revision 1 (ARMv5TE), cr=00053977
+CPU: VIVT data cache, VIVT instruction cache
+Machine model: D-Link DNS-325 NAS (Rev A1)
+Memory policy: Data cache writeback
+Built 1 zonelists in Zone order, mobility grouping on.  Total pages: 65024
+Kernel command line: console=ttyS0,115200 root=LABEL=rootusb usb-storage.delay_use=0 rootdelay=10 :::DB88FXX81:eth0:none
+PID hash table entries: 1024 (order: 0, 4096 bytes)
+Dentry cache hash table entries: 32768 (order: 5, 131072 bytes)
+Inode-cache hash table entries: 16384 (order: 4, 65536 bytes)
+Memory: 252092K/262144K available (4737K kernel code, 261K rwdata, 1284K rodata, 166K init, 617K bss, 10052K reserved)
+Virtual kernel memory layout:
+    vector  : 0xffff0000 - 0xffff1000   (   4 kB)
+    fixmap  : 0xfff00000 - 0xfffe0000   ( 896 kB)
+    vmalloc : 0xd0800000 - 0xff000000   ( 744 MB)
+    lowmem  : 0xc0000000 - 0xd0000000   ( 256 MB)
+    modules : 0xbf000000 - 0xc0000000   (  16 MB)
+      .text : 0xc0008000 - 0xc05e9960   (6023 kB)
+      .init : 0xc05ea000 - 0xc0613a2c   ( 167 kB)
+      .data : 0xc0614000 - 0xc06556a0   ( 262 kB)
+       .bss : 0xc06556ac - 0xc06efe84   ( 618 kB)
+SLUB: HWalign=32, Order=0-3, MinObjects=0, CPUs=1, Nodes=1
+Preemptible hierarchical RCU implementation.
+NR_IRQS:114
+sched_clock: 32 bits at 200MHz, resolution 5ns, wraps every 21474836475ns
+Console: colour dummy device 80x30
+Calibrating delay loop... 1191.11 BogoMIPS (lpj=5955584)
+pid_max: default: 32768 minimum: 301
+Mount-cache hash table entries: 512
+CPU: Testing write buffer coherency: ok
+Setting up static identity map for 0x481d60 - 0x481db8
+pinctrl core: initialized pinctrl subsystem
+regulator-dummy: no parameters
+NET: Registered protocol family 16
+DMA: preallocated 256 KiB pool for atomic coherent allocations
+cpuidle: using governor ladder
+cpuidle: using governor menu
+Kirkwood: MV88F6281-A1, TCLK=0.
+Feroceon L2: Enabling L2
+Feroceon L2: Cache support initialised.
+[Firmware Info]: /ocp@f1000000/ethernet-controller@72000/ethernet0-port@0: local-mac-address is not set
+bio: create slab <bio-0> at 0
+SATA0 Power: Failed to request enable GPIO39: -517
+reg-fixed-voltage 1.regulator: Failed to register regulator: -517
+platform 1.regulator: Driver reg-fixed-voltage requests probe deferral
+SATA1 Power: Failed to request enable GPIO40: -517
+reg-fixed-voltage 2.regulator: Failed to register regulator: -517
+platform 2.regulator: Driver reg-fixed-voltage requests probe deferral
+vgaarb: loaded
+SCSI subsystem initialized
+usbcore: registered new interface driver usbfs
+usbcore: registered new interface driver hub
+usbcore: registered new device driver usb
+cfg80211: Calling CRDA to update world regulatory domain
+Switched to clocksource orion_clocksource
+NET: Registered protocol family 2
+TCP established hash table entries: 2048 (order: 1, 8192 bytes)
+TCP bind hash table entries: 2048 (order: 1, 8192 bytes)
+TCP: Hash tables configured (established 2048 bind 2048)
+TCP: reno registered
+UDP hash table entries: 256 (order: 0, 4096 bytes)
+UDP-Lite hash table entries: 256 (order: 0, 4096 bytes)
+NET: Registered protocol family 1
+RPC: Registered named UNIX socket transport module.
+RPC: Registered udp transport module.
+RPC: Registered tcp transport module.
+RPC: Registered tcp NFSv4.1 backchannel transport module.
+Unpacking initramfs...
+Freeing initrd memory: 616K (c0e00000 - c0e9a000)
+NTFS driver 2.1.30 [Flags: R/W].
+msgmni has been set to 493
+io scheduler noop registered
+io scheduler deadline registered
+io scheduler cfq registered (default)
+kirkwood-pinctrl f1010000.pinctrl: registered pinctrl driver
+mv_xor f1060800.xor: Marvell shared XOR driver
+mv_xor f1060800.xor: Marvell XOR: ( xor cpy )
+mv_xor f1060800.xor: Marvell XOR: ( xor cpy )
+mv_xor f1060900.xor: Marvell shared XOR driver
+mv_xor f1060900.xor: Marvell XOR: ( xor cpy )
+mv_xor f1060900.xor: Marvell XOR: ( xor cpy )
+Serial: 8250/16550 driver, 2 ports, IRQ sharing disabled
+f1012000.serial: ttyS0 at MMIO 0xf1012000 (irq = 33, base_baud = 12500000) is a 16550A
+console [ttyS0] enabled
+loop: module loaded
+sata_mv f1080000.sata: slots 32 ports 2
+scsi0 : sata_mv
+scsi1 : sata_mv
+ata1: SATA max UDMA/133 irq 25
+ata2: SATA max UDMA/133 irq 25
+NAND device: Manufacturer ID: 0xec, Chip ID: 0xf1 (Samsung NAND 128MiB 3,3V 8-bit)
+NAND device: 128MiB, SLC, page size: 2048, OOB size: 64
+Scanning device for bad blocks
+Bad eraseblock 774 at 0x0000060c0000
+6 ofpart partitions found on MTD device orion_nand
+Creating 6 MTD partitions on "orion_nand":
+0x000000000000-0x000000100000 : "u-boot"
+0x000000100000-0x000000600000 : "uImage"
+0x000000600000-0x000000b00000 : "ramdisk"
+0x000000b00000-0x000007100000 : "image"
+0x000007100000-0x000007b00000 : "mini firmware"
+0x000007b00000-0x000008000000 : "config"
+libphy: orion_mdio_bus: probed
+mv643xx_eth: MV-643xx 10/100/1000 ethernet driver version 1.4
+ata1: SATA link up 3.0 Gbps (SStatus 123 SControl F300)
+ata1.00: ATA-8: WDC WD10EARX-00N0YB0, 51.0AB51, max UDMA/133
+ata1.00: 1953525168 sectors, multi 0: LBA48 NCQ (depth 31/32)
+ata1.00: configured for UDMA/133
+scsi 0:0:0:0: Direct-Access     ATA      WDC WD10EARX-00N 51.0 PQ: 0 ANSI: 5
+sd 0:0:0:0: [sda] 1953525168 512-byte logical blocks: (1.00 TB/931 GiB)
+sd 0:0:0:0: [sda] 4096-byte physical blocks
+sd 0:0:0:0: [sda] Write Protect is off
+sd 0:0:0:0: [sda] Write cache: enabled, read cache: enabled, doesn't support DPO or FUA
+ sda: sda1 sda2 sda3 sda4 sda5
+sd 0:0:0:0: [sda] Attached SCSI disk
+ata2: SATA link down (SStatus 0 SControl F300)
+mv643xx_eth_port mv643xx_eth_port.0 eth0: port 0 with MAC address c8:be:19:03:46:4e
+libertas_sdio: Libertas SDIO driver
+libertas_sdio: Copyright Pierre Ossman
+ehci_hcd: USB 2.0 'Enhanced' Host Controller (EHCI) Driver
+ehci-pci: EHCI PCI platform driver
+ehci-orion: EHCI orion driver
+orion-ehci f1050000.ehci: EHCI Host Controller
+orion-ehci f1050000.ehci: new USB bus registered, assigned bus number 1
+orion-ehci f1050000.ehci: irq 24, io mem 0xf1050000
+orion-ehci f1050000.ehci: USB 2.0 started, EHCI 1.00
+hub 1-0:1.0: USB hub found
+hub 1-0:1.0: 1 port detected
+usbcore: registered new interface driver usb-storage
+usbcore: registered new interface driver ums-datafab
+usbcore: registered new interface driver ums-freecom
+usbcore: registered new interface driver ums-jumpshot
+usbcore: registered new interface driver ums-sddr09
+usbcore: registered new interface driver ums-sddr55
+mousedev: PS/2 mouse device common for all mice
+rtc-mv f1010300.rtc: rtc core: registered f1010300.rtc as rtc0
+i2c /dev entries driver
+gpio-fan gpio_fan.3: GPIO fan initialized
+lm75 0-0048: hwmon1: sensor 'lm75'
+orion_wdt: Initial timeout 21 sec
+usbcore: registered new interface driver usbhid
+usbhid: USB HID core driver
+TCP: cubic registered
+NET: Registered protocol family 17
+lib80211: common routines for IEEE802.11 drivers
+SATA0 Power: 5000 mV
+SATA1 Power: 5000 mV
+input: gpio_keys.2 as /devices/gpio_keys.2/input/input0
+rtc-mv f1010300.rtc: setting system clock to 2014-01-25 17:39:58 UTC (1390671598)
+Freeing unused kernel memory: 164K (c05ea000 - c0613000)
+
+ ~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-
+INITRAMFS: starting...
+ ~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-
+usb 1-1: new high-speed USB device number 2 using orion-ehci
+usb-storage 1-1:1.0: USB Mass Storage device detected
+scsi2 : usb-storage 1-1:1.0
+scsi 2:0:0:0: Direct-Access     HP       v135w            0.00 PQ: 0 ANSI: 2
+sd 2:0:0:0: [sdb] 7897040 512-byte logical blocks: (4.04 GB/3.76 GiB)
+sd 2:0:0:0: [sdb] Write Protect is off
+sd 2:0:0:0: [sdb] Asking for cache data failed
+sd 2:0:0:0: [sdb] Assuming drive cache: write through
+sd 2:0:0:0: [sdb] Asking for cache data failed
+sd 2:0:0:0: [sdb] Assuming drive cache: write through
+ sdb: sdb1
+sd 2:0:0:0: [sdb] Asking for cache data failed
+sd 2:0:0:0: [sdb] Assuming drive cache: write through
+sd 2:0:0:0: [sdb] Attached SCSI removable disk
+INITRAMFS: waiting 10 sec. for root device
+random: nonblocking pool is initialized
+INITRAMFS: calling: /scripts/init-bottom/root-ro-overlayfs
+OVERLAYFS: initializing...
+OVERLAYFS: sucessfully set up.
+ ~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-
+INITRAMFS: trying to switch_root...
+ ~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-
+INIT: version 2.88 booting
+[info] Using makefile-style concurrent boot in runlevel S.
+[ ok ] Starting the hotplug events dispatcher: udevd.
+[ ok ] Synthesizing the initial hotplug events...done.
+[ ok ] Waiting for /dev to be fully populated...done.
+[ ok ] Activating swap...done.
+[ ok ] Cleaning up temporary files... /tmp.
+[ ok ] Activating lvm and md swap...done.
+[....] Checking file systems...fsck from util-linux 2.20.1
+done.
+[ ok ] Mounting local filesystems...done.
+[ ok ] Activating swapfile swap...done.
+[ ok ] Cleaning up temporary files....
+[ ok ] Setting kernel variables ...done.
+[ ok ] Configuring network interfaces...done.
+[ ok ] Cleaning up temporary files....
+INIT: Entering runlevel: 2
+[info] Using makefile-style concurrent boot in runlevel 2.
+[ ok ] Starting enhanced syslogd: rsyslogd.
+Starting Dropbear SSH server: dropbear.
+[....] Starting a multimedia keyboard daemon for Linux : esekeydESE Key Deamon 1.2.7 (SVN-r63)
+. ok
+
+Debian GNU/Linux 7 dns325 ttyS0
+
+dns325 login:
+
+
+
+##############################################################################

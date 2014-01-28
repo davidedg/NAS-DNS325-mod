@@ -1,0 +1,151 @@
+---------------------------------------------------------------------------------------
+ORIGINAL D-LINK MTD:
+---------------------------------------------------------------------------------------
+
+#/dev/mtd0      0x00000000-0x00100000 : "u-boot"
+#/dev/mtd1      0x00100000-0x00600000 : "uImage"
+#/dev/mtd2      0x00600000-0x00b00000 : "ramdisk"
+#/dev/mtd3      0x00b00000-0x07100000 : "image"
+#/dev/mtd4      0x07100000-0x07b00000 : "mini firmware"
+#/dev/mtd5      0x07b00000-0x08000000 : "config"
+# Uboot environment:
+# MTD device name       Device offset   Env. size       Flash sector size       Number of sectors
+/dev/mtd0               0xE0000         0x20000         0x20000
+
+---------------------------------------------------------------------------------------
+COMMANDS TO RELOAD DLINK NAND (using newer U-Boot)
+---------------------------------------------------------------------------------------
+
+setenv mtdparts 'mtdparts=orion_nand:1024k(u-boot),5120k(uImage),5120k(ramdisk),104448k(image),10240k(mini-firmware),5120k(config)'
+usb reset
+
+
+ext2load usb 0:1 0x100000 /mtd-orig/mtd1
+nand erase.part uImage
+nand write 0x100000 uImage
+
+
+ext2load usb 0:1 0x100000 /mtd-orig/mtd2
+nand erase.part ramdisk
+nand write 0x100000 ramdisk
+
+
+ext2load usb 0:1 0x100000 /mtd-orig/mtd3
+nand erase.part image
+nand write 0x100000 image
+
+ext2load usb 0:1 0x100000 /mtd-orig/mtd4
+nand erase.part mini-firmware
+nand write 0x100000 mini-firmware
+
+ext2load usb 0:1 0x100000 /mtd-orig/mtd5
+nand erase.part config
+nand write 0x100000 config
+
+
+
+---------------------------------------------------------------------------------------
+COMMANDS TO RELOAD DLINK NAND (using newer U-Boot)
+SHOW OF OUTPUT:
+---------------------------------------------------------------------------------------
+
+=> usb reset
+(Re)start USB...
+USB0:   USB EHCI 1.00
+scanning bus 0 for devices... 2 USB Device(s) found
+       scanning usb for storage devices... 1 Storage Device(s) found
+
+
+=> setenv mtdparts 'mtdparts=orion_nand:1024k(u-boot),5120k(uImage),5120k(ramdisk),104448k(image),10240k(mini-firmware),5120k(config)'
+
+	   
+=> ext2load usb 0:1 0x100000 /mtd-orig/mtd1
+1048576 bytes read in 500 ms (2 MiB/s)
+
+=> nand erase.part uImage
+
+NAND erase.part: device 0 offset 0x100000, size 0x500000
+Erasing at 0x5e0000 -- 100% complete.
+OK
+
+=> nand write 0x100000 uImage
+
+NAND write: device 0 offset 0x100000, size 0x500000
+ 5242880 bytes written: OK
+
+=> ext2load usb 0:1 0x100000 /mtd-orig/mtd2
+5242880 bytes read in 588 ms (8.5 MiB/s)
+=> nand erase.part ramdisk
+
+NAND erase.part: device 0 offset 0x600000, size 0x500000
+Erasing at 0xae0000 -- 100% complete.
+OK
+=> nand write 0x100000 ramdisk
+
+NAND write: device 0 offset 0x600000, size 0x500000
+ 5242880 bytes written: OK
+=> ext2load usb 0:1 0x100000 /mtd-orig/mtd3
+106954752 bytes read in 4524 ms (22.5 MiB/s)
+=> nand erase.part image
+
+NAND erase.part: device 0 offset 0xb00000, size 0x6600000
+Skipping bad block at  0x060c0000
+Erasing at 0x70e0000 -- 100% complete.
+OK
+=> nand write 0x100000 image
+
+NAND write: device 0 offset 0xb00000, size 0x6600000
+size adjusted to 0x65e0000 (1 bad blocks)
+Skip bad block 0x060c0000
+ 106823680 bytes written: OK
+=> ext2load usb 0:1 0x100000 /mtd-orig/mtd4
+10485760 bytes read in 783 ms (12.8 MiB/s)
+=> nand erase.part mini-firmware
+
+NAND erase.part: device 0 offset 0x7100000, size 0xa00000
+Erasing at 0x7ae0000 -- 100% complete.
+OK
+=> nand write 0x100000 mini-firmware
+
+NAND write: device 0 offset 0x7100000, size 0xa00000
+ 10485760 bytes written: OK
+=> ext2load usb 0:1 0x100000 /mtd-orig/mtd5
+5242880 bytes read in 545 ms (9.2 MiB/s)
+=> nand erase.part config
+
+NAND erase.part: device 0 offset 0x7b00000, size 0x500000
+Erasing at 0x7fe0000 -- 100% complete.
+OK
+=> nand write 0x100000 config
+
+NAND write: device 0 offset 0x7b00000, size 0x500000
+ 5242880 bytes written: OK
+
+
+---------------------------------------------------------------------------------------
+COMMANDS TO RELOAD DLINK NAND (using stock U-Boot)
+---------------------------------------------------------------------------------------
+
+usb reset
+
+ext2load usb 0:1 0x1000000 /1-04b05/mtd1
+nand erase 0x100000 0x500000
+nand write.e 0x1000000 
+
+ext2load usb 0:1 0x1000000 /1-04b05/mtd2
+nand erase 0x600000 0x500000
+nand write.e 0x1000000 0x600000 0x500000
+
+ext2load usb 0:1 0x1000000 /1-04b05/mtd3
+nand erase 0xb00000 0x6600000
+nand write.e 0x1000000 0xb00000 0x6600000
+
+ext2load usb 0:1 0x1000000 /1-04b05/mtd4
+nand erase 0x7100000 0xA00000
+nand write.e 0x1000000 0x7100000 0xA00000
+
+ext2load usb 0:1 0x1000000 /1-04b05/mtd5
+nand erase 0x7b00000 0x500000
+nand write.e 0x1000000 0x7b00000 0x500000
+
+
