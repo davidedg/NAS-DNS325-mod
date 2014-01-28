@@ -46,7 +46,7 @@ load_modules()
 			if [ -z "$m" ];  then
 				continue
 			fi
-			# Skip comments - d?ash removes whitespace prefix
+			# Skip comments - dash removes whitespace prefix
 			com=$(printf "%.1s" "${m}")
 			if [ "$com" = "#" ]; then
 				continue

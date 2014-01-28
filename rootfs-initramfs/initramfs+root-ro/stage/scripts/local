@@ -30,23 +30,52 @@ pre_mountroot()
 	# to deal with removable devices
 	if [ ! -e "${ROOT}" ]; then
 
-		# Default delay is 30s
-		slumber=${ROOTDELAY:-30}
+		sleepcounter=${ROOTDELAY}
 
-		echo "${MSGTAG_INITRAMFS}: waiting ${slumber} sec. for ${ROOT}"
+		echo "${MSGTAG_INITRAMFS}: waiting ${sleepcounter} sec. for root device"
 
-		slumber=$(( ${slumber} * 10 ))
-		while [ ! -e "${ROOT}" ]; do
-			/bin/sleep 0.1
-			slumber=$(( ${slumber} - 1 ))
-			[ ${slumber} -gt 0 ] || break
+		while [ -z "${ROOT}" ]; do
+			/bin/sleep 1.0
+			sleepcounter=$(( ${sleepcounter} - 1 ))
+
+			# try to rediscover devices
+			mdev -s
+			for x in $(cat /proc/cmdline); do
+				case $x in
+				root=*)
+					ROOT=${x#root=}
+					case $ROOT in
+					LABEL=*)
+						ROOT="${ROOT#LABEL=}"
+						# support any "/" in LABEL= path (escape to \x2f)
+						case "${ROOT}" in
+						*/*)
+							ROOT="$(echo ${ROOT} | sed 's,/,\\x2f,g')"
+						esac
+						ROOT=$(findfs LABEL=$ROOT)
+						;;
+					UUID=*)
+						ROOT=$(findfs UUID=${ROOT#UUID=})
+						;;
+					/dev/nfs)
+						[ -z "${BOOT}" ] && BOOT=nfs
+						;;
+					esac
+					;;
+				esac
+			done
+			[ ${sleepcounter} -gt 0 ] || break
+			[ -e "${ROOT}" ] || echo "${MSGTAG_INITRAMFS}: will wait ${sleepcounter} sec. for root device, no success so far"
 		done
 	fi
 
 	# If root device still not present, panic to let user try fix it
-	while [ ! -e "${ROOT}" ]; do
+	while [ -z "${ROOT}" ]; do
 		echo " ~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~- "
-		panic "${MSGTAG_INITRAMFS}: ERROR: ${ROOT} does not exist.  Dropping to a shell!"
+		echo "${MSGTAG_INITRAMFS}: ERROR: cannot find root device, please manually set it:"
+		echo "${MSGTAG_INITRAMFS}: e.g.: echo /dev/sdb2>/manualroot"
+		panic "${MSGTAG_INITRAMFS}: ERROR: cannot find root device.  Dropping to a shell!"
+		[ -r /manualroot ] && ROOT=$(cat /manualroot 2>&1)
 	done
 }
 
