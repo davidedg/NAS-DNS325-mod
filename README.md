@@ -22,6 +22,9 @@ Recommended read order:
 - kernel/compile-overlayfs-bt-sound.txt
 	- Compile new Kernel instructions
 
+- samba/samba.txt
+	- Samba configuration
+
 - bt-sound/bt-sound.txt
 	- Bluetooth and Sound support (NAS pairs to bluetooth speakers)
 
@@ -34,7 +37,6 @@ ToDO:
 
 - Clean documentation for UBIFS
 - Document HDD installation (GDISK)
-- Document Samba installation
 - Document Minidlna installation
 - Document OpenVPN installation
 - Document Transmission-Daemon installation
