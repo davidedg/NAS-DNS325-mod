@@ -1,0 +1,350 @@
+***************************************************
+USE THE "vars.txt" commands to prepare the environment variables we will use.
+***************************************************
+
+Note: the stock U-Boot does not recognize every usb key, so you may have 
+to try with different ones.
+
+PARTITION USB DEVICE IN 2: 1st 50MB, 2nd rest:
+Partition Table for /dev/sdd
+
+         ---Starting----      ----Ending-----    Start     Number of
+ # Flags Head Sect  Cyl   ID  Head Sect  Cyl     Sector    Sectors
+-- ----- ---- ---- ----- ---- ---- ---- ----- ----------- -----------
+ 1  0x80    1    1     0 0x83  246   62     5          62       91822
+ 2  0x00    0    1     6 0x83  179   28  1021       91884    15554836
+ 3  0x00    0    0     0 0x00    0    0     0           0           0
+ 4  0x00    0    0     0 0x00    0    0     0           0           0
+
+
+Create FS
+#1:	BOOT PARTITION
+mkfs.ext2 -L uboot-boot $USBBOOTDEV
+
+#2: ROOT PARTITION
+mkfs.ext4 -L rootusb -E lazy_itable_init=0,lazy_journal_init=0 $USBROOTDEV
+
+
+
+# mount boot and root usb
+mkdir -p $USBBOOTMNT
+mkdir -p $USBROOTMNT
+
+mount $USBBOOTDEV $USBBOOTMNT
+mount $USBROOTDEV $USBROOTMNT
+
+# copy rootfs to usb-root
+cp -a $RFShdd/* $USBROOTMNT/
+# move kernel and initramfs to usb-boot
+mv $USBROOTMNT/boot/*  $USBBOOTMNT/
+
+# fake for u-boot to be able to read from / and from /boot from usb 0:1
+cd $USBBOOTMNT
+ln -sf . boot
+cd -
+
+
+sync && umount $USBBOOTMNT && umount $USBROOTMNT
+
+
+
+
+Now you can insert the usb stick in the usb port of nas and follow the U-Boot part
+you can use custom or stock U-boot, see relative sections:
+	- stock_u-boot.txt 	if you decided to keep original U-Boot
+	- custom_u-boot.txt if you compiled your own u-boot (create_custom_u-boot.txt)
+
+
+The final output, with custom u-boot and OVERLAYFS on, should be similar to this:
+##############################################################################
+U-Boot 2014.01 (Jan 21 2014 - 18:35:47)
+D-Link DNS-325
+
+SoC:   Kirkwood 88F6281_A1
+DRAM:  256 MiB
+WARNING: Caches not enabled
+NAND:  128 MiB
+In:    serial
+Out:   serial
+Err:   serial
+Net:   egiga0 [PRIME]
+Hit any key to stop autoboot:  0
+(Re)start USB...
+USB0:   USB EHCI 1.00
+scanning bus 0 for devices... 2 USB Device(s) found
+       scanning usb for storage devices... 1 Storage Device(s) found
+3440539 bytes read in 599 ms (5.5 MiB/s)
+632329 bytes read in 265 ms (2.3 MiB/s)
+## Booting kernel from Legacy Image at 00a00000 ...
+   Image Name:   Linux-3.13.0+dtb+xusb+ofs+
+   Created:      2014-05-19  20:07:51 UTC
+   Image Type:   ARM Linux Kernel Image (uncompressed)
+   Data Size:    3440475 Bytes = 3.3 MiB
+   Load Address: 00008000
+   Entry Point:  00008000
+   Verifying Checksum ... OK
+## Loading init Ramdisk from Legacy Image at 00f00000 ...
+   Image Name:   DNS325-Initramfs
+   Created:      2014-05-19  20:44:42 UTC
+   Image Type:   ARM Linux RAMDisk Image (gzip compressed)
+   Data Size:    632265 Bytes = 617.4 KiB
+   Load Address: 00e00000
+   Entry Point:  00e00000
+   Verifying Checksum ... OK
+   Loading Kernel Image ... OK
+
+Starting kernel ...
+
+Uncompressing Linux... done, booting the kernel.
+[    0.000000] Booting Linux on physical CPU 0x0
+[    0.000000] Linux version 3.13.0+dtb+xusb+ofs+ (root@debian) (gcc version 4.7.3 (Sourcery CodeBench Lite 2013.05-23) ) #1 PREEMPT Mon May 19 22:07:41 CEST 2014
+[    0.000000] CPU: Feroceon 88FR131 [56251311] revision 1 (ARMv5TE), cr=00053977
+[    0.000000] CPU: VIVT data cache, VIVT instruction cache
+[    0.000000] Machine model: D-Link DNS-325 NAS (Rev A1)
+[    0.000000] Memory policy: Data cache writeback
+[    0.000000] Built 1 zonelists in Zone order, mobility grouping on.  Total pages: 65024
+[    0.000000] Kernel command line: console=ttyS0,115200 root=LABEL=rootusb usb-storage.delay_use=0 rootdelay=10 mtdparts=nand_mtd:0xc0000@0(uboot)ro,0x7f00000@0x100000(root) :::DB88FXX81:egiga0:none
+[    0.000000] PID hash table entries: 1024 (order: 0, 4096 bytes)
+[    0.000000] Dentry cache hash table entries: 32768 (order: 5, 131072 bytes)
+[    0.000000] Inode-cache hash table entries: 16384 (order: 4, 65536 bytes)
+[    0.000000] Memory: 251948K/262144K available (4859K kernel code, 251K rwdata, 1304K rodata, 169K init, 618K bss, 10196K reserved)
+[    0.000000] Virtual kernel memory layout:
+[    0.000000]     vector  : 0xffff0000 - 0xffff1000   (   4 kB)
+[    0.000000]     fixmap  : 0xfff00000 - 0xfffe0000   ( 896 kB)
+[    0.000000]     vmalloc : 0xd0800000 - 0xff000000   ( 744 MB)
+[    0.000000]     lowmem  : 0xc0000000 - 0xd0000000   ( 256 MB)
+[    0.000000]     modules : 0xbf000000 - 0xc0000000   (  16 MB)
+[    0.000000]       .text : 0xc0008000 - 0xc060d154   (6165 kB)
+[    0.000000]       .init : 0xc060e000 - 0xc0638634   ( 170 kB)
+[    0.000000]       .data : 0xc063a000 - 0xc0678ec0   ( 252 kB)
+[    0.000000]        .bss : 0xc0678ecc - 0xc0713984   ( 619 kB)
+[    0.000000] SLUB: HWalign=32, Order=0-3, MinObjects=0, CPUs=1, Nodes=1
+[    0.000000] Preemptible hierarchical RCU implementation.
+[    0.000000] NR_IRQS:114
+[    0.000000] sched_clock: 32 bits at 200MHz, resolution 5ns, wraps every 21474836475ns
+[    0.000000] Console: colour dummy device 80x30
+[    0.000236] Calibrating delay loop... 1191.11 BogoMIPS (lpj=5955584)
+[    0.090068] pid_max: default: 32768 minimum: 301
+[    0.090204] Mount-cache hash table entries: 512
+[    0.090737] CPU: Testing write buffer coherency: ok
+[    0.091072] Setting up static identity map for 0x49fc70 - 0x49fcc8
+[    0.093199] pinctrl core: initialized pinctrl subsystem
+[    0.094003] regulator-dummy: no parameters
+[    0.094396] NET: Registered protocol family 16
+[    0.094864] DMA: preallocated 256 KiB pool for atomic coherent allocations
+[    0.097675] cpuidle: using governor ladder
+[    0.097693] cpuidle: using governor menu
+[    0.097851] Kirkwood: MV88F6281-A1, TCLK=0.
+[    0.097992] Feroceon L2: Enabling L2
+[    0.098032] Feroceon L2: Cache support initialised.
+[    0.098499] [Firmware Info]: /ocp@f1000000/ethernet-controller@72000/ethernet0-port@0: local-mac-address is not set
+[    0.122457] bio: create slab <bio-0> at 0
+[    0.123098] SATA0 Power: Failed to request enable GPIO39: -517
+[    0.123272] reg-fixed-voltage 1.regulator: Failed to register regulator: -517
+[    0.123293] platform 1.regulator: Driver reg-fixed-voltage requests probe deferral
+[    0.123493] SATA1 Power: Failed to request enable GPIO40: -517
+[    0.123644] reg-fixed-voltage 2.regulator: Failed to register regulator: -517
+[    0.123663] platform 2.regulator: Driver reg-fixed-voltage requests probe deferral
+[    0.124038] vgaarb: loaded
+[    0.124575] SCSI subsystem initialized
+[    0.125582] usbcore: registered new interface driver usbfs
+[    0.125728] usbcore: registered new interface driver hub
+[    0.125902] usbcore: registered new device driver usb
+[    0.128410] cfg80211: Calling CRDA to update world regulatory domain
+[    0.129205] Switched to clocksource orion_clocksource
+[    0.142237] NET: Registered protocol family 2
+[    0.142672] TCP established hash table entries: 2048 (order: 1, 8192 bytes)
+[    0.142707] TCP bind hash table entries: 2048 (order: 1, 8192 bytes)
+[    0.142737] TCP: Hash tables configured (established 2048 bind 2048)
+[    0.142790] TCP: reno registered
+[    0.142802] UDP hash table entries: 256 (order: 0, 4096 bytes)
+[    0.142823] UDP-Lite hash table entries: 256 (order: 0, 4096 bytes)
+[    0.142991] NET: Registered protocol family 1
+[    0.143250] RPC: Registered named UNIX socket transport module.
+[    0.143259] RPC: Registered udp transport module.
+[    0.143265] RPC: Registered tcp transport module.
+[    0.143271] RPC: Registered tcp NFSv4.1 backchannel transport module.
+[    0.143477] Unpacking initramfs...
+[    0.185349] Freeing initrd memory: 612K (c0f01000 - c0f9a000)
+[    0.202064] NTFS driver 2.1.30 [Flags: R/W].
+[    0.202591] msgmni has been set to 493
+[    0.203425] Block layer SCSI generic (bsg) driver version 0.4 loaded (major 252)
+[    0.203438] io scheduler noop registered
+[    0.203445] io scheduler deadline registered
+[    0.203707] io scheduler cfq registered (default)
+[    0.204357] kirkwood-pinctrl f1010000.pinctrl: registered pinctrl driver
+[    0.204815] mv_xor f1060800.xor: Marvell shared XOR driver
+[    0.239290] mv_xor f1060800.xor: Marvell XOR: ( xor cpy )
+[    0.279282] mv_xor f1060800.xor: Marvell XOR: ( xor cpy )
+[    0.279487] mv_xor f1060900.xor: Marvell shared XOR driver
+[    0.319272] mv_xor f1060900.xor: Marvell XOR: ( xor cpy )
+[    0.359270] mv_xor f1060900.xor: Marvell XOR: ( xor cpy )
+[    0.364251] Serial: 8250/16550 driver, 2 ports, IRQ sharing disabled
+[    0.365542] f1012000.serial: ttyS0 at MMIO 0xf1012000 (irq = 33, base_baud = 12500000) is a 16550A
+[    0.862363] console [ttyS0] enabled
+[    0.869834] loop: module loaded
+[    0.874006] sata_mv f1080000.sata: slots 32 ports 2
+[    0.881617] scsi0 : sata_mv
+[    0.884853] scsi1 : sata_mv
+[    0.887968] ata1: SATA max UDMA/133 irq 25
+[    0.892154] ata2: SATA max UDMA/133 irq 25
+[    0.897736] NAND device: Manufacturer ID: 0xec, Chip ID: 0xf1 (Samsung NAND 128MiB 3,3V 8-bit)
+[    0.906650] NAND device: 128MiB, SLC, page size: 2048, OOB size: 64
+[    0.913059] Scanning device for bad blocks
+[    0.989977] Bad eraseblock 774 at 0x0000060c0000
+[    1.018034] 6 ofpart partitions found on MTD device orion_nand
+[    1.023900] Creating 6 MTD partitions on "orion_nand":
+[    1.029064] 0x000000000000-0x000000100000 : "u-boot"
+[    1.034423] 0x000000100000-0x000000600000 : "uImage"
+[    1.039772] 0x000000600000-0x000000b00000 : "ramdisk"
+[    1.045174] 0x000000b00000-0x000007100000 : "image"
+[    1.050534] 0x000007100000-0x000007b00000 : "mini firmware"
+[    1.056475] 0x000007b00000-0x000008000000 : "config"
+[    1.063685] libphy: orion_mdio_bus: probed
+[    1.068498] mv643xx_eth: MV-643xx 10/100/1000 ethernet driver version 1.4
+[    1.239230] ata1: SATA link down (SStatus 0 SControl F300)
+[    1.609223] ata2: SATA link down (SStatus 0 SControl F300)
+[    2.087395] mv643xx_eth_port mv643xx_eth_port.0 eth0: port 0 with MAC address c8:be:19:03:46:4e
+[    2.096298] libertas_sdio: Libertas SDIO driver
+[    2.100901] libertas_sdio: Copyright Pierre Ossman
+[    2.105816] ehci_hcd: USB 2.0 'Enhanced' Host Controller (EHCI) Driver
+[    2.112420] ehci-pci: EHCI PCI platform driver
+[    2.117000] ehci-orion: EHCI orion driver
+[    2.121220] orion-ehci f1050000.ehci: EHCI Host Controller
+[    2.126751] orion-ehci f1050000.ehci: new USB bus registered, assigned bus number 1
+[    2.134606] orion-ehci f1050000.ehci: irq 24, io mem 0xf1050000
+[    2.159224] orion-ehci f1050000.ehci: USB 2.0 started, EHCI 1.00
+[    2.165922] hub 1-0:1.0: USB hub found
+[    2.169771] hub 1-0:1.0: 1 port detected
+[    2.174338] usbcore: registered new interface driver usb-storage
+[    2.180538] usbcore: registered new interface driver ums-datafab
+[    2.186704] usbcore: registered new interface driver ums-freecom
+[    2.192907] usbcore: registered new interface driver ums-jumpshot
+[    2.199163] usbcore: registered new interface driver ums-sddr09
+[    2.205267] usbcore: registered new interface driver ums-sddr55
+[    2.211565] mousedev: PS/2 mouse device common for all mice
+[    2.217657] rtc-mv f1010300.rtc: rtc core: registered f1010300.rtc as rtc0
+[    2.224877] i2c /dev entries driver
+[    2.230039] gpio-fan gpio_fan.3: GPIO fan initialized
+[    2.235880] lm75 0-0048: hwmon1: sensor 'lm75'
+[    2.241826] orion_wdt: Initial timeout 21 sec
+[    2.246339] md: linear personality registered for level -1
+[    2.251956] md: raid0 personality registered for level 0
+[    2.257288] md: raid1 personality registered for level 1
+[    2.262942] device-mapper: uevent: version 1.0.3
+[    2.267969] device-mapper: ioctl: 4.27.0-ioctl (2013-10-30) initialised: dm-devel@redhat.com
+[    2.282679] usbcore: registered new interface driver usbhid
+[    2.288279] usbhid: USB HID core driver
+[    2.292519] TCP: cubic registered
+[    2.295851] NET: Registered protocol family 17
+[    2.300716] lib80211: common routines for IEEE802.11 drivers
+[    2.307407] SATA0 Power: 5000 mV
+[    2.311087] SATA1 Power: 5000 mV
+[    2.314997] input: gpio_keys.2 as /devices/gpio_keys.2/input/input0
+[    2.321755] rtc-mv f1010300.rtc: setting system clock to 2014-05-19 21:24:09 UTC (1400534649)
+[    2.331160] Freeing unused kernel memory: 168K (c060e000 - c0638000)
+
+ ~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-
+INITRAMFS: starting...
+ ~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-
+[    2.489343] usb 1-1: new high-speed USB device number 2 using orion-ehci
+INITRAMFS: waiting 10 sec. for root device
+[    3.055963] usb-storage 1-1:1.0: USB Mass Storage device detected
+[    3.062522] scsi2 : usb-storage 1-1:1.0
+[    3.068791] scsi 2:0:0:0: Direct-Access              USB DISK 2.0     DL07 PQ: 0 ANSI: 4
+[    3.079515] sd 2:0:0:0: [sda] 15646720 512-byte logical blocks: (8.01 GB/7.46 GiB)
+[    3.088498] sd 2:0:0:0: [sda] Write Protect is off
+[    3.094749] sd 2:0:0:0: [sda] No Caching mode page found
+[    3.100133] sd 2:0:0:0: [sda] Assuming drive cache: write through
+[    3.111247] sd 2:0:0:0: [sda] No Caching mode page found
+[    3.116596] sd 2:0:0:0: [sda] Assuming drive cache: write through
+[    3.124067]  sda: sda1 sda2
+[    3.131374] sd 2:0:0:0: [sda] No Caching mode page found
+[    3.136723] sd 2:0:0:0: [sda] Assuming drive cache: write through
+[    3.142908] sd 2:0:0:0: [sda] Attached SCSI removable disk
+[    3.863654] EXT3-fs (sda2): error: couldn't mount because of unsupported optional features (240)
+[    3.873766] EXT2-fs (sda2): error: couldn't mount because of unsupported optional features (240)
+[    3.902487] EXT4-fs (sda2): mounted filesystem with ordered data mode. Opts: (null)
+INITRAMFS: calling: /scripts/init-bottom/root-ro-overlayfs
+OVERLAYFS: initializing...
+OVERLAYFS: sucessfully set up.
+ ~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-
+INITRAMFS: trying to switch_root...
+ ~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-
+INIT: version 2.88 booting
+[info] Using makefile-style concurrent boot in runlevel S.
+[ ok ] Starting the hotplug events dispatcher: udevd.
+[ ok ] Synthesizing the initial hotplug events...done.
+[ ok ] Waiting for /dev to be fully populated...done.
+[ ok ] Activating swap...done.
+[ ok ] Cleaning up temporary files... /tmp.
+[ ok ] Activating lvm and md swap...done.
+[....] Checking file systems...fsck from util-linux 2.20.1
+[    9.830281] random: nonblocking pool is initialized
+done.
+[....] Mounting local filesystems...mount: special device LABEL=hdd-scratch does not exist
+mount: special device LABEL=hdd-data1 does not exist
+mount: special device LABEL=hdd-data2 does not exist
+failed.
+[ ok ] Activating swapfile swap...done.
+[ ok ] Cleaning up temporary files....
+[ ok ] Setting kernel variables ...done.
+[ ok ] Configuring network interfaces...done.
+[ ok ] Cleaning up temporary files....
+INIT: Entering runlevel: 2
+[info] Using makefile-style concurrent boot in runlevel 2.
+[ ok ] Starting enhanced syslogd: rsyslogd.
+Starting Dropbear SSH server: dropbear.
+[....] Starting a multimedia keyboard daemon for Linux : esekeydESE Key Deamon 1.2.7 (SVN-r63)
+. ok
+
+Debian GNU/Linux 7 nashostname ttyS0
+
+nashostname login: root
+Password:
+Last login: Mon May 19 23:23:34 CEST 2014 on ttyS0
+Linux nashostname 3.13.0+dtb+xusb+ofs+ #1 PREEMPT Mon May 19 22:07:41 CEST 2014 armv5tel
+
+The programs included with the Debian GNU/Linux system are free software;
+the exact distribution terms for each program are described in the
+individual files in /usr/share/doc/*/copyright.
+
+Debian GNU/Linux comes with ABSOLUTELY NO WARRANTY, to the extent
+permitted by applicable law.
+
+root@nashostname:~# free
+             total       used       free     shared    buffers     cached
+Mem:        252728      21712     231016          0       2412      11212
+-/+ buffers/cache:       8088     244640
+Swap:            0          0          0
+
+root@nashostname:~# mount
+/dev/sda2 on /mnt/root-ro type ext4 (ro,relatime,data=ordered)
+tmpfs-root on /mnt/root-rw type tmpfs (rw,relatime)
+overlayfs-root on / type overlayfs (rw,relatime,lowerdir=/mnt/root-ro,upperdir=/mnt/root-rw)
+tmpfs on /run type tmpfs (rw,nosuid,noexec,relatime,size=25276k,mode=755)
+tmpfs on /run/lock type tmpfs (rw,nosuid,nodev,noexec,relatime,size=5120k)
+proc on /proc type proc (rw,nosuid,nodev,noexec,relatime)
+sysfs on /sys type sysfs (rw,nosuid,nodev,noexec,relatime)
+tmpfs on /dev type tmpfs (rw,relatime,size=10240k,mode=755)
+tmpfs on /run/shm type tmpfs (rw,nosuid,nodev,noexec,relatime,size=50540k)
+devpts on /dev/pts type devpts (rw,nosuid,noexec,relatime,gid=5,mode=620)
+tmpfs on /tmp type tmpfs (rw,relatime)
+/dev/sda1 on /boot type ext2 (ro,nosuid,nodev,noexec,noatime,errors=remount-ro)
+
+root@nashostname:~# shutdown -h now
+INIT: Se[info] Using makefile-style concurrent boot in runlevel 0.
+Stopping Dropbear SSH server: dropbear.
+[ ok ] Asking all remaining processes to terminate...done.
+[ ok ] All processes ended within 1 seconds...done.
+[ ok ] Stopping enhanced syslogd: rsyslogd.
+[info] Saving the system clock.
+[info] Hardware Clock updated to Mon May 19 23:26:08 CEST 2014.
+[ ok ] Deconfiguring network interfaces...done.
+[ ok ] Unmounting temporary filesystems...done.
+[ ok ] Deactivating swap...done.
+[ ok ] Unmounting local filesystems...done.
+[info] Will now halt.
+[  124.018373] reboot: Power down
+
+##############################################################################
