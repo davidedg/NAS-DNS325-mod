@@ -1,8 +1,8 @@
-RFShddPATH=/root/nas/rootfs
+RFShddPATH=/root/nas/dns325/rootfs
 RFShddCFG=$RFShddPATH/multistrap-hdd.cfg
 RFShdd=$RFShddPATH/rfshdd
 
-RFSnandPATH=/root/nas/rootfs
+RFSnandPATH=/root/nas/dns325/rootfs
 RFSnandCFG=$RFSnandPATH/multistrap-nand.cfg
 RFSnand=$RFSnandPATH/rfsnand
 
@@ -11,16 +11,19 @@ NASIP=192.168.0.100
 NASGW=192.168.0.254
 NASHOSTNAME=nasivadaras.ivadaras.lan
 
-UBOOTWORKDIR=/root/nas/uboot
+UBOOTWORKDIR=/root/nas/dns325/uboot
 
-KERNELWORKDIR=/root/nas/kernel
+KERNELWORKDIR=/root/nas/dns325/kernel
+KERNELCURRENT=linux-git
 
-
-NASINITRAMFS=/root/nas/initramfs+root-ro
+NASINITRAMFS=/root/nas/dns325/initramfs+root-ro
 NASINITRAMFSNAME="DNS325-Initramfs"
 
 #USB TEST:
-USBTESTDEV=/dev/sdc1
+USBBOOTDEV=/dev/sdd1
+USBROOTDEV=/dev/sdd2
+
+USBBOOTMNT=$RFShddPATH/usb-boot
+USBROOTMNT=$RFShddPATH/usb-root
+
 USBTESTMNT=/mnt/usb_stick/
-
-
