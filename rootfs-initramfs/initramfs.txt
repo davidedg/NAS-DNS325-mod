@@ -30,7 +30,7 @@ mkdir -p $NASINITRAMFS/stage/scripts
 # Just compile support in kernel, it's easier.
 # If you still need it, you may try with;
 mkdir -p $NASINITRAMFS/stage/lib/modules
-cd ${KERNELWORKDIR}/linux-overlayfs
+cd ${KERNELWORKDIR}/${KERNELCURRENT}
 make INSTALL_MOD_PATH=$NASINITRAMFS/stage modules_install
 cd -
 
@@ -92,11 +92,12 @@ cd $NASINITRAMFS
 ./make-uInitramfs
 	2199 blocks
 	Image Name:   DNS325-Initramfs
-	Created:      Sat Jan 25 18:19:41 2014
+	Created:      Mon May 19 22:44:42 2014
 	Image Type:   ARM Linux RAMDisk Image (gzip compressed)
-	Data Size:    632255 Bytes = 617.44 kB = 0.60 MB
+	Data Size:    632265 Bytes = 617.45 kB = 0.60 MB
 	Load Address: 00e00000
 	Entry Point:  00e00000
+
 
 
 ##################################################
@@ -107,7 +108,7 @@ cd $NASINITRAMFS
 
 cp $NASINITRAMFS/uInitramfs $RFSnand/boot/uInitramfs
 
-- COPY uInitramfs to RootFS for NAND:
+- COPY uInitramfs to RootFS for HDD:
 
 cp $NASINITRAMFS/uInitramfs $RFShdd/boot/uInitramfs
 
