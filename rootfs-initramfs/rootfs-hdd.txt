@@ -11,9 +11,10 @@ For the HDD and USB version, I chose a standard Debian 7 installation, with mini
 For the NAND version, the packages selection is smaller and I used EMDEBIAN to reduce to the bone the size.
 
 I used multistrap (as opposed to debootstrap) because it's the preferred way for EMDEBIAN.
-While doing tests, I used a local caching proxy (squid), to avoid downloading again and again.
+While doing tests, I used a local transparent caching proxy (squid), to avoid downloading again and again.
 
-For 2-nd stage part, I used QEMU emulation (On Debian, the needed package is qemu-user-static).
+For 2-nd stage part, I used QEMU emulation
+On Debian: apt-get install qemu-user-static
 
 ##################################################
 # MULTISTRAP config file
@@ -35,7 +36,7 @@ aptsources=wheezy wheezy-updates wheezy-security
 cleanup=true
 
 [wheezy]
-packages=udev kmod mtd-utils evtest usbutils xfsprogs smartmontools gdisk esekeyd u-boot-tools cpio klibc-utils makedev mountall apt aptitude dialog netbase net-tools ifupdown iproute iptables pump iputils-ping dropbear rsyslog vim-tiny mc htop procps less locales wget bash-completion screen ntpdate parted
+packages=udev kmod mtd-utils evtest usbutils xfsprogs parted gdisk esekeyd u-boot-tools cpio klibc-utils makedev procps psmisc less apt aptitude dialog netbase net-tools ethtool ifupdown iproute iptables pump iputils-ping dropbear rsyslog ntpdate vim-tiny mc htop nmon locales wget bash-completion screen
 source=http://ftp.debian.org/debian
 keyring=debian-archive-keyring
 components=main contrib non-free
@@ -119,8 +120,6 @@ dpkg-reconfigure locales
 ## Set a root password
 passwd
 
-## Get rid of some unused packages
-apt-get -y purge initramfs-tools mountall plymouth
 
 ## Install dns-nas-utils.deb from Jamie Lentin
 dpkg -i /tmp/dns-nas-utils.deb
@@ -142,7 +141,7 @@ exit
 ## -> EXIT CHROOT - post-config:
 #################################
 
-
+# We have never been here ;P
 rm -f > $RFShdd/root/.bash_history
 
 
@@ -207,27 +206,20 @@ T0:2345:respawn:/sbin/getty -L ttyS0 115200 linux
 END
 
 
+# Prepare Mount Points for HDD attach
+mkdir -p $RFShdd/scratch
+mkdir $RFShdd/data1
+mkdir $RFShdd/data2
+
+# Prepare FSTAB
 cat <<END > $RFShdd/etc/fstab
-/dev/root       /               auto       defaults,noatime,errors=remount-ro      0  0
-tmpfs           /tmp            tmpfs      defaults 0 0
-LABEL=uboot-boot    /boot   auto    ro,nodev,nosuid,noexec,noatime,errors=remount-ro   0   0
-#UUID=ece46cea-fafe-478e-a995-6e57ef7a1738       none            swap    sw      0       0
-END
-
-
-
-cat <<END > $RFShdd/etc/profile.d/z-custom-aliases.sh
-if [ "\$BASH" ]; then
-  export LS_OPTIONS='--color=auto'
-  eval "\`dircolors\`"
-  alias ls='ls \$LS_OPTIONS'
-  alias ll='ls \$LS_OPTIONS -l'
-  alias l='ls \$LS_OPTIONS -la'
-fi
-END
-
-cat <<END > $RFShdd/etc/profile.d/z-vim.sh
-alias vi=vim.tiny
+/dev/root              /               auto       defaults,noatime,errors=remount-ro      0    0
+tmpfs                  /tmp            tmpfs      defaults 0 0
+LABEL=uboot-boot       /boot           auto       ro,nodev,nosuid,noexec,noatime,errors=remount-ro    0    0
+LABEL=hdd-swap         none            swap       sw    0    0
+LABEL=hdd-scratch      /scratch        auto       defaults,noatime    0    0
+LABEL=hdd-data1        /data1          auto       defaults,noatime    0    0
+LABEL=hdd-data2        /data2          auto       defaults,noatime    0    0
 END
 
 
@@ -245,10 +237,8 @@ cat <<END > $RFShdd/etc/fw_env.config
 END
 
 
-
 # Use a tmpfs for /tmp
 sed -i 's/^#*\(RAMTMP\)=.*$/\1=yes/' $RFShdd/etc/default/tmpfs
-
 
 [ ! -e $RFShdd/etc/mtab ] || rm $RFShdd/etc/mtab
 ln -s /proc/mounts $RFShdd/etc/mtab
@@ -257,27 +247,30 @@ ln -s /proc/mounts $RFShdd/etc/mtab
 ln -s /dev/null $RFShdd/etc/blkid.tab
 
 
-# Overwrite dns_temp with updated version (for DNS325 only)
-cp dns_temp $RFShdd/usr/bin/dns_temp
-
-
-# Overwrite fan-daemon with updated version (fan device changed path in recent kernels)
-cp fan-daemon $RFShdd/usr/sbin/fan-daemon
-fan_device=$(find /sys/devices -name fan1_target)
-
-
 
 ## Set up EseKeyD to control NAS buttons
 
 sed --in-place -e 's/^START_ESEKEYD=false/START_ESEKEYD=true/' $RFShdd/etc/default/esekeyd
 
 cat <<END > $RFShdd/etc/esekeyd.conf
-POWER:/sbin/shutdown -h now
+POWER:/usr/local/sbin/button-power
 RESTART:/sbin/halt -f -p
-EJECTCD:/usr/local/sbin/button-usbcopy
+EJECTCD:/usr/local/sbin/button-ejectcd
 END
 
-cat <<END > $RFShdd/usr/local/sbin/button-usbcopy
+
+## POWER BUTTON
+cat <<END > $RFShdd/usr/local/sbin/button-power
+#!/bin/sh
+echo timer > /sys/class/leds/dns325:white:power/trigger
+/sbin/shutdown -h now
+END
+
+chmod +x $RFShdd/usr/local/sbin/button-power
+
+
+## COPY BUTTON
+cat <<END > $RFShdd/usr/local/sbin/button-ejectcd
 #!/bin/sh
 # Sample script to show buttons customization and LED functionality
 # Substitute with what you want, for ex.: WiFi on/off
@@ -290,7 +283,20 @@ fi
 echo \$new_bright > /sys/class/leds/dns325:white:power/brightness
 END
 
-chmod +x $RFShdd/usr/local/sbin/button-usbcopy
+chmod +x $RFShdd/usr/local/sbin/button-ejectcd
+
+
+
+# Overwrite dns_temp with updated version (for DNS325 only)
+cp dns_temp $RFShdd/usr/bin/dns_temp
+
+
+# Overwrite fan-daemon with updated version (fan device changed path in recent kernels)
+# -> fan_device=$(find /sys/devices -name fan1_target)
+cp fan-daemon $RFShdd/usr/sbin/fan-daemon
+
+
+
 
 #### not on HDD version, we have plenty space!
 ## free up some more space
@@ -312,8 +318,56 @@ UTC
 END
 
 
-## Customized rc.local (see file for details)
-cp rc.local $RFShdd/etc/
+
+######################
+## RC.LOCAL
+######################
+
+cat <<END > $RFShdd/etc/rc.local
+#!/bin/sh -e
+# Adjust Memory Settings
+echo 5000 > /proc/sys/vm/min_free_kbytes
+echo  300 > /proc/sys/vm/vfs_cache_pressure
+echo    1 > /proc/sys/vm/dirty_background_ratio
+echo    1 > /proc/sys/vm/dirty_ratio
+
+# Increase HDD Block Device Performance (todo: check and enable)
+#for hdd in \`find /sys/devices/platform/sata_mv.0 -type d -name block -exec /bin/ls {} \; 2>/dev/null\`
+#do
+#echo "1024" > /sys/block/\$hdd/queue/read_ahead_kb
+#done
+
+
+# PREVENT OOM-Killer from killing critical processes
+pgrep -f /usr/sbin/dropbear | while read PID; do echo -1000 > /proc/\$PID/oom_score_adj; done
+pgrep -f /usr/sbin/esekeyd | while read PID; do echo -1000 > /proc/\$PID/oom_score_adj; done
+# TTY is special because is spawned differently
+sleep 10 && pgrep -f /sbin/getty | while read PID; do echo -1000 > /proc/\$PID/oom_score_adj; done &
+
+
+# Fix /var/run/screen permissions on overlayfs
+[ -d /var/run/screen ] || mkdir -m 755 /var/run/screen
+chmod 755 /var/run/screen
+
+exit 0
+END
+
+
+## Some custom bash aliases
+
+cat <<END > $RFShdd/etc/profile.d/z-custom-aliases.sh
+if [ "\$BASH" ]; then
+  export LS_OPTIONS='--color=auto'
+  eval "\`dircolors\`"
+  alias ls='ls \$LS_OPTIONS'
+  alias ll='ls \$LS_OPTIONS -l'
+  alias l='ls \$LS_OPTIONS -la'
+fi
+END
+
+cat <<END > $RFShdd/etc/profile.d/z-vim.sh
+alias vi=vim.tiny
+END
 
 
 ##################################################
