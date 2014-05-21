@@ -1,6 +1,0 @@
-#!/bin/sh
-service squeezelite stop
-service logitechmediaserver stop
-service pulseaudio-root stop
-service bluetooth stop
-service dbus stop

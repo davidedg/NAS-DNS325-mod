@@ -22,24 +22,17 @@ Recommended read order:
 - kernel/compile-overlayfs-bt-sound.txt
 	- Compile new Kernel instructions
 
-- samba/samba.txt
-	- Samba configuration
+- boot/boot-from-usb.txt
+	- How to install and run from USB stick
 
-- bt-sound/bt-sound.txt
-	- Bluetooth and Sound support (NAS pairs to bluetooth speakers)
 
-- mopidy/mopidy.txt
-	- Use Mopidy to stream your playlists to bluetooth speakers.
-
+- Go to https://github.com/davidedg/NAS-mod-config for further customizations
 
 
 ToDO:
 
 - Clean documentation for UBIFS
 - Document HDD installation (GDISK)
-- Document Minidlna installation
-- Document OpenVPN installation
-- Document Transmission-Daemon installation
 
 
 
