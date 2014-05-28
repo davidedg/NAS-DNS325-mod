@@ -240,7 +240,6 @@ EOF
 # Reduce Kernel size
 cat <<EOF >>.config
 # Unused archs/machs selected by default kirkwood config
-CONFIG_MACH_DLINK_KIRKWOOD_DT=n
 CONFIG_MACH_NET2BIG_V2=n
 CONFIG_MACH_NET5BIG_V2=n
 CONFIG_MACH_OPENRD_BASE=n
@@ -333,10 +332,10 @@ CONFIG_XFS_FS=m
 CONFIG_FUSE_FS=m
 CONFIG_MSDOS_FS=m
 CONFIG_VFAT_FS=y
-CONFIG_NTFS_FS=y
+CONFIG_NTFS_FS=m
 CONFIG_NTFS_RW=y
 CONFIG_JFFS2_FS=m
-CONFIG_HFS_FS=y
+CONFIG_HFS_FS=m
 CONFIG_HFSPLUS_FS=y
 EOF
 
@@ -412,6 +411,9 @@ CONFIG_BT_HCIVHCI=m
 CONFIG_BT_MRVL=m
 CONFIG_BT_MRVL_SDIO=m
 CONFIG_BT_ATH3K=m
+# UINPUT for Headsets
+CONFIG_INPUT_MISC=y
+CONFIG_INPUT_UINPUT=m
 EOF
 
 
@@ -438,9 +440,11 @@ EOF
 
 
 # Set labels for configured features in kernel name and filename
+# You can you use this to differentiate different builds
 LOCALVERSION=""
 KERNELSUFFIX=""
 UIMAGE_SYMLINK=""
+
 
 grep "CONFIG_ARM_APPENDED_DTB=y" .config
 if [ $? = 0 ]; then
